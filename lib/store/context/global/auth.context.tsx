@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 // Constants
-import { getStoreId, removeItem } from "@/lib/store/services";
+import { getItem, getStoreId, removeItem, setItem } from "@/lib/store/services";
 import { useStoreMode } from "@/lib/store/context/global/store-mode.context";
 import { clearActiveRole } from "@/lib/shared/active-role";
 
@@ -16,7 +16,6 @@ import { IAuthContext, IAuthProviderProps } from "@/lib/store/utils/interfaces";
 // Expo
 import * as Localization from "expo-localization";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 
 // I18n
 import { setAppLanguage } from "@/i18next";
@@ -37,7 +36,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
 
   const setTokenAsync = useCallback(
     async (token: string) => {
-      await SecureStore.setItemAsync(tokenKey, token);
+      await setItem(tokenKey, token);
       await client.clearStore();
       setToken(token);
     },
@@ -77,7 +76,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     try {
       await Promise.all([
         client.clearStore(),
-        SecureStore.deleteItemAsync(tokenKey),
+        removeItem(tokenKey),
         removeItem(storeIdKey),
         clearActiveRole(),
       ]);
@@ -91,7 +90,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
 
   const checkAuth = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(tokenKey);
+      const token = await getItem(tokenKey);
       const storeId = await getStoreId(storeIdKey);
 
       if (!storeId || !token) {

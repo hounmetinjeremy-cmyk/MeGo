@@ -1,0 +1,62 @@
+diff --git a/node_modules/expo-secure-store/build/ExpoSecureStore.web.js b/node_modules/expo-secure-store/build/ExpoSecureStore.web.js
+index 1a318b9..0ed44da 100644
+--- a/node_modules/expo-secure-store/build/ExpoSecureStore.web.js
++++ b/node_modules/expo-secure-store/build/ExpoSecureStore.web.js
+@@ -1,2 +1,54 @@
+-export default {};
+-//# sourceMappingURL=ExpoSecureStore.web.js.map
+\ No newline at end of file
++// Patched (see patches/expo-secure-store+*.patch): the stock web build ships
++// an empty native-module stub, so every call throws "not a function" and
++// crashes React Native Web apps that use expo-secure-store. This backs the
++// same native-module surface with localStorage instead.
++function hasLocalStorage() {
++  return typeof localStorage !== "undefined";
++}
++
++export default {
++  async getValueWithKeyAsync(key) {
++    if (!hasLocalStorage()) return null;
++    try {
++      return localStorage.getItem(key);
++    } catch {
++      return null;
++    }
++  },
++  async setValueWithKeyAsync(value, key) {
++    if (!hasLocalStorage()) return;
++    try {
++      localStorage.setItem(key, value);
++    } catch {
++      // Quota exceeded or storage disabled — nothing sensible to do on web.
++    }
++  },
++  async deleteValueWithKeyAsync(key) {
++    if (!hasLocalStorage()) return;
++    try {
++      localStorage.removeItem(key);
++    } catch {
++      // ignore
++    }
++  },
++  getValueWithKeySync(key) {
++    if (!hasLocalStorage()) return null;
++    try {
++      return localStorage.getItem(key);
++    } catch {
++      return null;
++    }
++  },
++  setValueWithKeySync(value, key) {
++    if (!hasLocalStorage()) return false;
++    try {
++      localStorage.setItem(key, value);
++      return true;
++    } catch {
++      return false;
++    }
++  },
++  canUseBiometricAuthentication() {
++    return false;
++  },
++};
