@@ -1,0 +1,1 @@
+export {default as DrawerLayout} from '@/lib/rider/ui/layouts/home-drawer/drawer-main/DrawerMain'
