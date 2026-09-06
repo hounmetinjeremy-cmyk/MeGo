@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Enatega Delivery Platform",
+    "name": "MeGo",
     "slug": "enatega-delivery-platform",
-    "description": "Unified delivery platform: rider (GPS tracking, order acceptance) and store (catalog, order management) in a single app, merged from the enatega-multivendor-rider and enatega-multivendor-store apps.",
+    "description": "MeGo unified delivery platform: rider (GPS tracking, order acceptance) and store (catalog, order management) in a single app.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./lib/store/assets/images/icon.png",

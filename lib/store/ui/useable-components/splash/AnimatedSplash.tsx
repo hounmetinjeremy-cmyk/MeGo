@@ -27,21 +27,19 @@ import Animated, {
 } from "react-native-reanimated";
 
 const PIN = require("./assets/pin.png");
-const WM_WHITE = require("./assets/wordmarkWhite.png");
-const WM_NAVY = require("./assets/wordmarkNavy.png");
 const GLOW = require("./assets/glow.png");
 
 const THEMES = {
   dark: {
     bg: ["#111c33", "#0b1225", "#070d1e"] as const,
-    wordmark: WM_WHITE,
+    wordmarkColor: "#ffffff",
     ring: "rgba(110,224,122,0.85)",
     underline: "#6ee07a",
     orbOpacity: 1,
   },
   light: {
     bg: ["#ffffff", "#f4f8f5", "#e7efe9"] as const,
-    wordmark: WM_NAVY,
+    wordmarkColor: "#111c33",
     ring: "rgba(47,164,87,0.75)",
     underline: "#3fb85a",
     orbOpacity: 0.8,
@@ -348,11 +346,20 @@ export default function AnimatedSplash({
         ]}
       >
         <Animated.View style={[styles.wmClip, wmClipStyle]}>
-          <Animated.Image
-            source={theme.wordmark}
-            style={{ width: 252 * sf, height: 42 * sf }}
-            resizeMode="contain"
-          />
+          <Animated.Text
+            style={{
+              width: 252 * sf,
+              height: 42 * sf,
+              lineHeight: 42 * sf,
+              fontSize: 32 * sf,
+              fontWeight: "800",
+              letterSpacing: 1.5 * sf,
+              textAlign: "center",
+              color: theme.wordmarkColor,
+            }}
+          >
+            MeGo
+          </Animated.Text>
         </Animated.View>
       </Animated.View>
 
