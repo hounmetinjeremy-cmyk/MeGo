@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword, signJWT, verifyJWT, type JwtPayload } fro
 export interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
   DB: D1Database;
+  UPLOADS: R2Bucket;
   JWT_SECRET: string;
 }
 
@@ -376,7 +377,46 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ location });
   }
 
+  // ---- Uploads (product images, delivery proof) ----
+  if (pathname === "/api/store/upload" && method === "POST") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    return handleUpload(request, env, `products/${auth.sub}`);
+  }
+
+  if (pathname === "/api/rider/upload" && method === "POST") {
+    const auth = await requireRole(request, env, "rider");
+    if (auth instanceof Response) return auth;
+    return handleUpload(request, env, `delivery-proof/${auth.sub}`);
+  }
+
+  const uploadGetMatch = pathname.match(/^\/api\/uploads\/(.+)$/);
+  if (uploadGetMatch && method === "GET") {
+    const object = await env.UPLOADS.get(uploadGetMatch[1]);
+    if (!object) return error("Not found", 404);
+    return new Response(object.body, {
+      headers: {
+        "content-type": object.httpMetadata?.contentType ?? "application/octet-stream",
+        "cache-control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
   return error("Not found", 404);
+}
+
+async function handleUpload(request: Request, env: Env, prefix: string): Promise<Response> {
+  const contentType = request.headers.get("content-type") ?? "application/octet-stream";
+  const filename = request.headers.get("x-filename") || "upload.bin";
+  const extMatch = filename.match(/\.[a-zA-Z0-9]+$/);
+  const key = `${prefix}/${crypto.randomUUID()}${extMatch ? extMatch[0] : ""}`;
+
+  const body = await request.arrayBuffer();
+  if (body.byteLength === 0) return error("Empty upload body");
+  if (body.byteLength > 10 * 1024 * 1024) return error("File too large (max 10MB)", 413);
+
+  await env.UPLOADS.put(key, body, { httpMetadata: { contentType } });
+  return json({ url: `/api/uploads/${key}` }, 201);
 }
 
 async function requireRole(

@@ -13,5 +13,11 @@
       "database_name": "mego-db",
       "database_id": "472c3386-292c-4442-862a-90fd1ec3db7d"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "mego-uploads"
+    }
   ]
 }
