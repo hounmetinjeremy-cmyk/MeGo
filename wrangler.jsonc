@@ -1,8 +1,17 @@
 {
   "name": "mego",
   "compatibility_date": "2025-06-05",
+  "main": "./worker/index.ts",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mego-db",
+      "database_id": "472c3386-292c-4442-862a-90fd1ec3db7d"
+    }
+  ]
 }
