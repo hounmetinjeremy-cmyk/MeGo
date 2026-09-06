@@ -130,6 +130,8 @@ TaskManager.defineTask(RIDER_LOCATION_TASK, async ({data, error}) => {
 });
 
 export const startBackgroundLocation = async (config: BackgroundConfig) => {
+  // Background location tasks (TaskManager) are native-only; no web build exists.
+  if (Platform.OS === "web") return false;
   const foreground = await Location.getForegroundPermissionsAsync();
   if (foreground.status !== "granted") return false;
   const background = await Location.getBackgroundPermissionsAsync();
@@ -157,6 +159,7 @@ export const startBackgroundLocation = async (config: BackgroundConfig) => {
 };
 
 export const stopBackgroundLocation = async () => {
+  if (Platform.OS === "web") return;
   if (await Location.hasStartedLocationUpdatesAsync(RIDER_LOCATION_TASK)) {
     await Location.stopLocationUpdatesAsync(RIDER_LOCATION_TASK);
   }

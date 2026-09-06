@@ -252,6 +252,8 @@ export const ChatNotificationProvider = ({
   ]);
 
   const reconcilePresentedNotifications = useCallback(async () => {
+    // expo-notifications' presented-notifications API is native-only.
+    if (Platform.OS === "web") return;
     const presented = await Notifications.getPresentedNotificationsAsync();
     presented.forEach((notification) =>
       recordChatNotification(notification, false),
