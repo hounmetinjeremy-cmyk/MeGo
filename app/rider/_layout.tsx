@@ -35,6 +35,7 @@ import AnimatedSplashScreen from "@/lib/rider/ui/useable-components/splash/Anima
 import UnavailableStatus from "@/lib/rider/ui/useable-components/unavailable-status";
 import { requestMediaLibraryPermissionsAsync } from "expo-image-picker";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 import PublicAccessTokenService from "@/lib/rider/services/public-access-token.service";
 import {
@@ -44,7 +45,10 @@ import {
 import getEnvVars from "@/environment.rider";
 import { useMemo } from "react";
 
-initSentry();
+// @sentry/react-native and the RN-only ErrorUtils global don't exist on web.
+if (Platform.OS !== "web") {
+  initSentry();
+}
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen?.preventAutoHideAsync();
@@ -127,6 +131,8 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === "web") return;
+
     const previousHandler = ErrorUtils.getGlobalHandler?.();
     ErrorUtils.setGlobalHandler((error, isFatal) => {
       if (__DEV__) {
@@ -150,4 +156,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default Platform.OS === "web" ? RootLayout : Sentry.wrap(RootLayout);
