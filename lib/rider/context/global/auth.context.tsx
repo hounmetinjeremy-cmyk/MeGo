@@ -2,11 +2,12 @@ import * as Location from "expo-location";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 // Interfaces§
-import { getSecureItem, removeSecureItem, setSecureItem } from "@/lib/rider/services/secure-storage";
+import { removeSecureItem } from "@/lib/rider/services/secure-storage";
 import { IAuthContext, IAuthProviderProps } from "@/lib/rider/utils/interfaces";
 import { useRouter } from "expo-router";
 import { useRiderMode } from "@/lib/rider/context/global/rider-mode.context";
 import { clearActiveRole } from "@/lib/shared/active-role";
+import { getApiToken, setApiToken, clearApiToken } from "@/lib/shared/api-client";
 
 export const AuthContext = React.createContext<IAuthContext>(
   {} as IAuthContext,
@@ -18,7 +19,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
 }) => {
   // Hooks
   const router = useRouter();
-  const { riderIdKey, tokenKey } = useRiderMode();
+  const { riderIdKey } = useRiderMode();
 
   // State
   const [token, setToken] = useState<string>("");
@@ -29,7 +30,10 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
 
     const hydrateAuth = async () => {
       try {
-        const storedToken = await getSecureItem(tokenKey);
+        // One shared token (lib/shared/api-client) for the whole app: set
+        // once at the unified login, read here regardless of which section
+        // (client/store/rider) the user is currently in.
+        const storedToken = await getApiToken();
 
         if (isMounted && storedToken) {
           setToken(storedToken);
@@ -46,15 +50,15 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [tokenKey]);
+  }, []);
 
   const setTokenAsync = useCallback(
     async (token: string) => {
-      await setSecureItem(tokenKey, token);
+      await setApiToken(token);
       await client.clearStore();
       setToken(token);
     },
-    [client, tokenKey],
+    [client],
   );
 
   const logout = useCallback(async () => {
@@ -62,7 +66,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
 
     try {
       await Promise.all([
-        removeSecureItem(tokenKey),
+        clearApiToken(),
         removeSecureItem(riderIdKey),
         clearActiveRole(),
       ]);
@@ -93,7 +97,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     } finally {
       router.replace("/rider/login");
     }
-  }, [client, riderIdKey, router, tokenKey]);
+  }, [client, riderIdKey, router]);
 
   const values: IAuthContext = useMemo(
     () => ({

@@ -96,9 +96,15 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
         .bind(newId(), userId, body.storeName || body.name)
         .run();
     }
+    if (body.role === "rider") {
+      await env.DB.prepare("INSERT INTO rider_profiles (user_id, is_active) VALUES (?, 1)")
+        .bind(userId)
+        .run();
+    }
 
     const token = await signJWT({ sub: userId, role: body.role }, env.JWT_SECRET);
-    return json({ token, user: { id: userId, email: body.email, name: body.name, role: body.role } }, 201);
+    const user = await withCapabilities(env, { id: userId, email: body.email, name: body.name, role: body.role });
+    return json({ token, user }, 201);
   }
 
   if (pathname === "/api/auth/email-exists" && method === "POST") {
@@ -127,7 +133,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     const token = await signJWT({ sub: user.id, role: user.role }, env.JWT_SECRET);
     return json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: await withCapabilities(env, { id: user.id, email: user.email, name: user.name, role: user.role }),
     });
   }
 
@@ -136,21 +142,9 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     if (!auth) return error("Unauthorized", 401);
     const user = await env.DB.prepare("SELECT id, email, name, role, phone FROM users WHERE id = ?")
       .bind(auth.sub)
-      .first();
+      .first<{ id: string; email: string; name: string; role: JwtPayload["role"]; phone: string | null }>();
     if (!user) return error("User not found", 404);
-    const store = await getStoreForOwner(env, auth.sub);
-    const riderProfile = await env.DB.prepare(
-      "SELECT is_active FROM rider_profiles WHERE user_id = ?",
-    )
-      .bind(auth.sub)
-      .first<{ is_active: number }>();
-    return json({
-      user: {
-        ...user,
-        storeId: store?.id ?? null,
-        isRiderActive: riderProfile?.is_active === 1,
-      },
-    });
+    return json({ user: await withCapabilities(env, user) });
   }
 
   // ---- Auth: Google Sign-In ----
@@ -214,23 +208,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     }
 
     const token = await signJWT({ sub: user.id, role: user.role }, env.JWT_SECRET);
-    const store = await getStoreForOwner(env, user.id);
-    const riderProfile = await env.DB.prepare(
-      "SELECT is_active FROM rider_profiles WHERE user_id = ?",
-    )
-      .bind(user.id)
-      .first<{ is_active: number }>();
-    return json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        storeId: store?.id ?? null,
-        isRiderActive: riderProfile?.is_active === 1,
-      },
-    });
+    return json({ token, user: await withCapabilities(env, user) });
   }
 
   // ---- Unified roles: become a vendor / activate rider mode ----
@@ -1092,6 +1070,26 @@ async function getStoreForOwner(env: Env, ownerId: string) {
   return env.DB.prepare("SELECT id FROM stores WHERE owner_id = ?")
     .bind(ownerId)
     .first<{ id: string }>();
+}
+
+// Shared shape for every auth response (register/login/google/me): capability
+// (storeId / isRiderActive) travels with the user everywhere a client checks
+// "can this account act as a vendor/rider", instead of the fixed JWT role.
+async function withCapabilities(
+  env: Env,
+  user: { id: string; email: string; name: string; role: JwtPayload["role"] },
+) {
+  const store = await getStoreForOwner(env, user.id);
+  const riderProfile = await env.DB.prepare(
+    "SELECT is_active FROM rider_profiles WHERE user_id = ?",
+  )
+    .bind(user.id)
+    .first<{ is_active: number }>();
+  return {
+    ...user,
+    storeId: store?.id ?? null,
+    isRiderActive: riderProfile?.is_active === 1,
+  };
 }
 
 async function findCustomerZone(env: Env, point: [number, number]) {

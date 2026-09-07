@@ -64,6 +64,10 @@ export interface MeGoUser {
   email: string;
   name: string;
   role: "rider" | "store" | "admin" | "customer";
+  // Capability-based, independent of `role`: any account can own a store
+  // and/or have an active rider profile (see worker/index.ts requireRole).
+  storeId: string | null;
+  isRiderActive: boolean;
 }
 
 export function register(input: {
@@ -99,6 +103,40 @@ export function login(email: string, password: string) {
 
 export function me() {
   return request<{ user: MeGoUser }>("/api/auth/me");
+}
+
+// Single unified login: verifies the Google ID token server-side and
+// returns/creates the account. Same response shape as login()/register().
+export function googleSignIn(idToken: string) {
+  return request<{ token: string; user: MeGoUser }>("/api/auth/google", {
+    method: "POST",
+    body: { idToken },
+    auth: false,
+  });
+}
+
+// "Devenir vendeur" — any authenticated account can create its own store,
+// like creating a page. Idempotent: returns the existing store if one
+// already exists for this account.
+export function becomeVendor(input: { name: string; address?: string; lat?: number; lng?: number }) {
+  return request<{ id: string }>("/api/stores", { method: "POST", body: input });
+}
+
+export function activateRiderProfile(vehicleType?: string) {
+  return request<{ ok: true }>("/api/rider-profile/activate", {
+    method: "POST",
+    body: { vehicleType },
+  });
+}
+
+export function deactivateRiderProfile() {
+  return request<{ ok: true }>("/api/rider-profile/deactivate", { method: "POST" });
+}
+
+export function getPublicStats() {
+  return request<{ activeStores: number; activeRiders: number }>("/api/public/stats", {
+    auth: false,
+  });
 }
 
 // ---- Store: categories ----

@@ -6,9 +6,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 // Constants
-import { getItem, getStoreId, removeItem, setItem } from "@/lib/store/services";
+import { removeItem } from "@/lib/store/services";
 import { useStoreMode } from "@/lib/store/context/global/store-mode.context";
 import { clearActiveRole } from "@/lib/shared/active-role";
+import { getApiToken, setApiToken, clearApiToken } from "@/lib/shared/api-client";
 
 // Interfaces
 import { IAuthContext, IAuthProviderProps } from "@/lib/store/utils/interfaces";
@@ -32,15 +33,15 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
   const [isSelected, setIsSelected] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [token, setToken] = useState<string>("");
-  const { storeIdKey, tokenKey } = useStoreMode();
+  const { storeIdKey } = useStoreMode();
 
   const setTokenAsync = useCallback(
     async (token: string) => {
-      await setItem(tokenKey, token);
+      await setApiToken(token);
       await client.clearStore();
       setToken(token);
     },
-    [client, tokenKey],
+    [client],
   );
 
   // Handlers
@@ -76,7 +77,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     try {
       await Promise.all([
         client.clearStore(),
-        removeItem(tokenKey),
+        clearApiToken(),
         removeItem(storeIdKey),
         clearActiveRole(),
       ]);
@@ -86,14 +87,18 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     } catch {
       return;
     }
-  }, [client, storeIdKey, tokenKey]);
+  }, [client, storeIdKey]);
 
   const checkAuth = useCallback(async () => {
     try {
-      const token = await getItem(tokenKey);
-      const storeId = await getStoreId(storeIdKey);
+      // One shared token (lib/shared/api-client) for the whole app: set once
+      // at the unified login, read here regardless of which section
+      // (client/store/rider) the user is currently in. Whether this account
+      // can actually act as a store is enforced server-side (requireRole),
+      // not by a locally-stored store id.
+      const token = await getApiToken();
 
-      if (!storeId || !token) {
+      if (!token) {
         return await logout();
       }
       setToken(token);
@@ -102,7 +107,7 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
     } finally {
       setIsInitialized(true);
     }
-  }, [logout, storeIdKey, tokenKey]);
+  }, [logout]);
 
   // UseEffects
   useEffect(() => {

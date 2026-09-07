@@ -33,7 +33,7 @@ const useLogin = () => {
     try {
       setIsLoading(true);
       const { token, user } = await apiLogin(username.toLowerCase(), password);
-      if (user.role !== "rider") {
+      if (!user.isRiderActive) {
         FlashMessageComponent({ message: t("This account is not a rider account") });
         return;
       }

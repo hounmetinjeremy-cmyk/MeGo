@@ -24,13 +24,14 @@ const useLogin = () => {
     try {
       setIsLoading(true);
       const { token, user } = await apiLogin(username, password);
-      if (user.role !== "store") {
+      if (!user.storeId) {
         FlashMessageComponent({ message: "This account is not a store account" });
         return;
       }
       await setApiToken(token);
-      // Also satisfies the existing auth gate ((protected)/_layout.tsx), which
-      // only cares that both a token and a store id are present.
+      // (protected)/_layout.tsx no longer requires a locally-stored store id
+      // (capability is checked server-side), but other store-scoped local
+      // prefs are still keyed by it, so keep it populated.
       await setItem(storeIdKey, user.id);
       await setTokenAsync(token);
       await setActiveRole("store");
