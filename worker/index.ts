@@ -12,6 +12,7 @@ export interface Env {
   DB: D1Database;
   UPLOADS: R2Bucket;
   JWT_SECRET: string;
+  GOOGLE_CLIENT_IDS?: string;
   FEDAPAY_MODE?: string;
   FEDAPAY_SECRET_KEY?: string;
   FEDAPAY_WEBHOOK_KEY?: string;
@@ -137,7 +138,143 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       .bind(auth.sub)
       .first();
     if (!user) return error("User not found", 404);
-    return json({ user });
+    const store = await getStoreForOwner(env, auth.sub);
+    const riderProfile = await env.DB.prepare(
+      "SELECT is_active FROM rider_profiles WHERE user_id = ?",
+    )
+      .bind(auth.sub)
+      .first<{ is_active: number }>();
+    return json({
+      user: {
+        ...user,
+        storeId: store?.id ?? null,
+        isRiderActive: riderProfile?.is_active === 1,
+      },
+    });
+  }
+
+  // ---- Auth: Google Sign-In ----
+  // Single unified login: verifies the Google ID token, then looks up the
+  // account by google_id, falls back to linking an existing email/password
+  // account on first Google login, or creates a new one (role='customer' —
+  // vendor/rider capability is added later via /api/stores and
+  // /api/rider-profile/activate, not at signup).
+  if (pathname === "/api/auth/google" && method === "POST") {
+    const body = await request.json<{ idToken: string }>();
+    if (!body.idToken) return error("idToken is required");
+    if (!env.GOOGLE_CLIENT_IDS) return error("Google Sign-In is not configured on this server", 500);
+
+    const allowedAudiences = env.GOOGLE_CLIENT_IDS.split(",").map((id) => id.trim());
+    const verifyResponse = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(body.idToken)}`,
+    );
+    if (!verifyResponse.ok) return error("Invalid Google token", 401);
+    const payload = await verifyResponse.json<{
+      sub: string;
+      email?: string;
+      email_verified?: string;
+      name?: string;
+      aud: string;
+    }>();
+    if (!allowedAudiences.includes(payload.aud)) return error("Invalid Google token", 401);
+    if (!payload.email || payload.email_verified !== "true") {
+      return error("Google account has no verified email", 401);
+    }
+
+    const email = payload.email.toLowerCase();
+    let user = await env.DB.prepare(
+      "SELECT id, email, name, role FROM users WHERE google_id = ?",
+    )
+      .bind(payload.sub)
+      .first<{ id: string; email: string; name: string; role: JwtPayload["role"] }>();
+
+    if (!user) {
+      const existingByEmail = await env.DB.prepare(
+        "SELECT id, email, name, role FROM users WHERE email = ?",
+      )
+        .bind(email)
+        .first<{ id: string; email: string; name: string; role: JwtPayload["role"] }>();
+
+      if (existingByEmail) {
+        await env.DB.prepare("UPDATE users SET google_id = ? WHERE id = ?")
+          .bind(payload.sub, existingByEmail.id)
+          .run();
+        user = existingByEmail;
+      } else {
+        const userId = newId();
+        const placeholderPassword = await hashPassword(crypto.randomUUID());
+        const name = payload.name || email.split("@")[0];
+        await env.DB.prepare(
+          "INSERT INTO users (id, email, password_hash, role, name, google_id) VALUES (?, ?, ?, 'customer', ?, ?)",
+        )
+          .bind(userId, email, placeholderPassword, name, payload.sub)
+          .run();
+        user = { id: userId, email, name, role: "customer" };
+      }
+    }
+
+    const token = await signJWT({ sub: user.id, role: user.role }, env.JWT_SECRET);
+    const store = await getStoreForOwner(env, user.id);
+    const riderProfile = await env.DB.prepare(
+      "SELECT is_active FROM rider_profiles WHERE user_id = ?",
+    )
+      .bind(user.id)
+      .first<{ is_active: number }>();
+    return json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        storeId: store?.id ?? null,
+        isRiderActive: riderProfile?.is_active === 1,
+      },
+    });
+  }
+
+  // ---- Unified roles: become a vendor / activate rider mode ----
+  // Any authenticated account can create its own store (like creating a
+  // page) or activate a rider profile — no admin step and no separate
+  // login required. Both are idempotent: calling again just returns the
+  // existing store, or re-activates the paused rider profile.
+  if (pathname === "/api/stores" && method === "POST") {
+    const auth = await getAuthUser(request, env);
+    if (!auth) return error("Unauthorized", 401);
+    const existing = await getStoreForOwner(env, auth.sub);
+    if (existing) return json({ id: existing.id }, 200);
+
+    const body = await request.json<{ name: string; address?: string; lat?: number; lng?: number }>();
+    if (!body.name) return error("name is required");
+    const storeId = newId();
+    await env.DB.prepare(
+      "INSERT INTO stores (id, owner_id, name, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+      .bind(storeId, auth.sub, body.name, body.address ?? null, body.lat ?? null, body.lng ?? null)
+      .run();
+    return json({ id: storeId }, 201);
+  }
+
+  if (pathname === "/api/rider-profile/activate" && method === "POST") {
+    const auth = await getAuthUser(request, env);
+    if (!auth) return error("Unauthorized", 401);
+    const body = await request.json<{ vehicleType?: string }>().catch(() => ({}) as { vehicleType?: string });
+    await env.DB.prepare(
+      `INSERT INTO rider_profiles (user_id, is_active, vehicle_type) VALUES (?, 1, ?)
+       ON CONFLICT(user_id) DO UPDATE SET is_active = 1, vehicle_type = excluded.vehicle_type`,
+    )
+      .bind(auth.sub, body.vehicleType ?? null)
+      .run();
+    return json({ ok: true });
+  }
+
+  if (pathname === "/api/rider-profile/deactivate" && method === "POST") {
+    const auth = await getAuthUser(request, env);
+    if (!auth) return error("Unauthorized", 401);
+    await env.DB.prepare("UPDATE rider_profiles SET is_active = 0 WHERE user_id = ?")
+      .bind(auth.sub)
+      .run();
+    return json({ ok: true });
   }
 
   // ---- Store: products ----
@@ -425,7 +562,11 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
-  // ---- Admin: accounts (riders & vendors are onboarded by admin, not self-registration) ----
+  // ---- Admin: accounts ----
+  // Lists every account with vendor/rider capability, however it was
+  // acquired (admin-created, or self-service via /api/stores and
+  // /api/rider-profile/activate) — capability (a stores/rider_profiles row)
+  // is what defines a vendor/rider now, not the account's original role.
   if (pathname === "/api/admin/users" && method === "GET") {
     const auth = await requireRole(request, env, "admin");
     if (auth instanceof Response) return auth;
@@ -434,15 +575,17 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
 
     if (role === "rider") {
       const { results } = await env.DB.prepare(
-        "SELECT id, email, name, phone, created_at FROM users WHERE role = 'rider' ORDER BY created_at DESC",
+        `SELECT u.id, u.email, u.name, u.phone, u.created_at, rp.is_active AS rider_is_active
+         FROM users u JOIN rider_profiles rp ON rp.user_id = u.id
+         WHERE rp.is_active = 1 ORDER BY u.created_at DESC`,
       ).all();
       return json({ users: results });
     }
 
     const { results } = await env.DB.prepare(
       `SELECT u.id, u.email, u.name, u.phone, u.created_at, s.name AS store_name
-       FROM users u LEFT JOIN stores s ON s.owner_id = u.id
-       WHERE u.role = 'store' ORDER BY u.created_at DESC`,
+       FROM users u JOIN stores s ON s.owner_id = u.id
+       ORDER BY u.created_at DESC`,
     ).all();
     return json({ users: results });
   }
@@ -500,6 +643,18 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       .bind(...values)
       .run();
     return json({ ok: true });
+  }
+
+  // ---- Public: unified showcase stats (counts only — never exposes a
+  // rider's live location publicly, only how many are currently active) ----
+  if (pathname === "/api/public/stats" && method === "GET") {
+    const stores = await env.DB.prepare("SELECT COUNT(*) AS n FROM stores WHERE is_active = 1").first<{
+      n: number;
+    }>();
+    const riders = await env.DB.prepare("SELECT COUNT(*) AS n FROM rider_profiles WHERE is_active = 1").first<{
+      n: number;
+    }>();
+    return json({ activeStores: stores?.n ?? 0, activeRiders: riders?.n ?? 0 });
   }
 
   // ---- Public: browse (customer app) ----
@@ -902,6 +1057,12 @@ async function handleUpload(request: Request, env: Env, prefix: string): Promise
   return json({ url: `/api/uploads/${key}` }, 201);
 }
 
+// Access to "store" and "rider" endpoints is capability-based, not tied to
+// the account's original role: any authenticated user who owns a store (or
+// has an active rider profile) passes, whether that capability came from
+// self-service activation or from an admin-created account. This is what
+// lets a single unified account act as vendor and/or rider without a
+// separate role or login.
 async function requireRole(
   request: Request,
   env: Env,
@@ -909,8 +1070,22 @@ async function requireRole(
 ): Promise<JwtPayload | Response> {
   const auth = await getAuthUser(request, env);
   if (!auth) return error("Unauthorized", 401);
-  if (auth.role !== role) return error("Forbidden", 403);
-  return auth;
+  if (auth.role === role) return auth;
+
+  if (role === "store") {
+    const store = await getStoreForOwner(env, auth.sub);
+    if (store) return auth;
+  }
+  if (role === "rider") {
+    const riderProfile = await env.DB.prepare(
+      "SELECT user_id FROM rider_profiles WHERE user_id = ? AND is_active = 1",
+    )
+      .bind(auth.sub)
+      .first();
+    if (riderProfile) return auth;
+  }
+
+  return error("Forbidden", 403);
 }
 
 async function getStoreForOwner(env: Env, ownerId: string) {

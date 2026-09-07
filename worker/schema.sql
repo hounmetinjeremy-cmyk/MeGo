@@ -3,6 +3,15 @@
 -- apply it to the local D1 emulation with:
 --   npx wrangler d1 execute mego-db --local --file=worker/schema.sql
 
+-- `role` is the account's original/base identity (kept for backward
+-- compatibility with accounts created before unified roles). It no longer
+-- gates access on its own: whether an account can act as a vendor or rider
+-- is decided by owning a row in `stores` / `rider_profiles` (see
+-- `requireRole` in worker/index.ts) so any account can "become a vendor" or
+-- "activate rider mode" without a separate role or a new login.
+-- `google_id` is set for accounts created via Google Sign-In; `password_hash`
+-- is still required for those (a random unusable value), since they never
+-- log in with a password.
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -10,6 +19,19 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL CHECK (role IN ('rider','store','admin','customer')),
   name TEXT NOT NULL,
   phone TEXT,
+  google_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+
+-- A user "activates rider mode" by getting a row here (self-service or
+-- admin-created); `is_active = 0` means they've paused delivering without
+-- losing the profile.
+CREATE TABLE IF NOT EXISTS rider_profiles (
+  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  is_active INTEGER NOT NULL DEFAULT 1,
+  vehicle_type TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
