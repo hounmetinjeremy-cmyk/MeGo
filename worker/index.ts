@@ -1,10 +1,19 @@
 import { hashPassword, verifyPassword, signJWT, verifyJWT, type JwtPayload } from "./crypto";
+import {
+  createFedapayCheckout,
+  verifyFedapaySignature,
+  fedapayEventStatus,
+  fedapayEventTransactionId,
+} from "./fedapay";
 
 export interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
   DB: D1Database;
   UPLOADS: R2Bucket;
   JWT_SECRET: string;
+  FEDAPAY_MODE?: string;
+  FEDAPAY_SECRET_KEY?: string;
+  FEDAPAY_WEBHOOK_KEY?: string;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -198,7 +207,25 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
-  // ---- Orders: create (used by store for now — no customer app in MeGo yet) ----
+  // ---- Public: browse (customer app) ----
+  if (pathname === "/api/stores" && method === "GET") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, name, address, lat, lng FROM stores WHERE is_active = 1 ORDER BY name ASC",
+    ).all();
+    return json({ stores: results });
+  }
+
+  const storeProductsMatch = pathname.match(/^\/api\/stores\/([^/]+)\/products$/);
+  if (storeProductsMatch && method === "GET") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, store_id, name, description, price_cents, image_url FROM products WHERE store_id = ? AND is_available = 1 ORDER BY created_at DESC",
+    )
+      .bind(storeProductsMatch[1])
+      .all();
+    return json({ products: results });
+  }
+
+  // ---- Orders: create (customer app) ----
   if (pathname === "/api/orders" && method === "POST") {
     const body = await request.json<{
       store_id: string;
@@ -208,10 +235,12 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       delivery_lat?: number;
       delivery_lng?: number;
       items: { product_id: string; quantity: number }[];
+      payment_method?: "COD" | "FEDAPAY";
     }>();
     if (!body.store_id || !body.customer_name || !body.delivery_address || !body.items?.length) {
       return error("store_id, customer_name, delivery_address and items are required");
     }
+    const paymentMethod = body.payment_method === "FEDAPAY" ? "FEDAPAY" : "COD";
 
     let totalCents = 0;
     const itemRows: { id: string; product_id: string; quantity: number; price_cents: number }[] = [];
@@ -227,7 +256,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
 
     const orderId = newId();
     await env.DB.prepare(
-      "INSERT INTO orders (id, store_id, customer_name, customer_phone, delivery_address, delivery_lat, delivery_lng, total_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO orders (id, store_id, customer_name, customer_phone, delivery_address, delivery_lat, delivery_lng, total_cents, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
       .bind(
         orderId,
@@ -238,6 +267,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
         body.delivery_lat ?? null,
         body.delivery_lng ?? null,
         totalCents,
+        paymentMethod,
       )
       .run();
 
@@ -249,7 +279,67 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
         .run();
     }
 
-    return json({ id: orderId, total_cents: totalCents }, 201);
+    if (paymentMethod !== "FEDAPAY") {
+      return json({ id: orderId, total_cents: totalCents, payment_method: paymentMethod }, 201);
+    }
+
+    try {
+      const { transactionId, paymentUrl } = await createFedapayCheckout(env, {
+        orderId,
+        amountCents: totalCents,
+        customerName: body.customer_name,
+        customerPhone: body.customer_phone,
+      });
+      await env.DB.prepare("UPDATE orders SET fedapay_transaction_id = ? WHERE id = ?")
+        .bind(transactionId, orderId)
+        .run();
+      return json({ id: orderId, total_cents: totalCents, payment_method: paymentMethod, payment_url: paymentUrl }, 201);
+    } catch (err) {
+      console.error("FedaPay checkout setup failed", err);
+      return json(
+        { id: orderId, total_cents: totalCents, payment_method: paymentMethod, payment_url: null, payment_error: "Payment setup failed, please retry" },
+        201,
+      );
+    }
+  }
+
+  // ---- Orders: detail (public, customer tracking) ----
+  const orderDetailMatch = pathname.match(/^\/api\/orders\/([^/]+)$/);
+  if (orderDetailMatch && method === "GET") {
+    const order = await env.DB.prepare("SELECT * FROM orders WHERE id = ?")
+      .bind(orderDetailMatch[1])
+      .first();
+    if (!order) return error("Order not found", 404);
+    const { results: items } = await env.DB.prepare(
+      "SELECT oi.id, oi.quantity, oi.price_cents, p.name AS product_name FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?",
+    )
+      .bind(orderDetailMatch[1])
+      .all();
+    return json({ order, items });
+  }
+
+  // ---- Payments: FedaPay webhook ----
+  if (pathname === "/api/fedapay/webhook" && method === "POST") {
+    const rawBody = await request.text();
+    const signatureHeader = request.headers.get("fedapay-signature") ?? request.headers.get("FedaPay-Signature");
+    const valid = await verifyFedapaySignature(rawBody, signatureHeader, env.FEDAPAY_WEBHOOK_KEY);
+    if (!valid) return error("Invalid signature", 401);
+
+    let event: unknown = {};
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      return json({ received: true });
+    }
+
+    const transactionId = fedapayEventTransactionId(event);
+    const status = fedapayEventStatus(event);
+    if (transactionId && status) {
+      await env.DB.prepare("UPDATE orders SET payment_status = ?, updated_at = datetime('now') WHERE fedapay_transaction_id = ?")
+        .bind(status, transactionId)
+        .run();
+    }
+    return json({ received: true });
   }
 
   // ---- Store: orders ----

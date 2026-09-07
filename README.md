@@ -21,6 +21,7 @@ lib/
 worker/
   index.ts          # API REST (Cloudflare Worker) : auth, produits, commandes, GPS, uploads
   crypto.ts         # JWT (HS256) + hash de mot de passe (PBKDF2), Web Crypto pur
+  fedapay.ts        # Paiement FedaPay : création de transaction + vérification du webhook
   schema.sql        # schéma D1
 ```
 
@@ -32,7 +33,9 @@ Cloudflare Workers + D1 (SQLite) + R2 (fichiers), tout dans le même Worker qui 
 
 - **Auth** : `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — JWT (HS256)
 - **Produits** (vendeur) : `GET/POST /api/store/products`, `PATCH/DELETE /api/store/products/:id`
-- **Commandes** : `POST /api/orders` (création), `GET /api/store/orders`, `PATCH /api/store/orders/:id/status`
+- **App client** (public, sans compte) : `GET /api/stores` (boutiques actives), `GET /api/stores/:id/products` (menu d'une boutique), `GET /api/orders/:id` (suivi d'une commande + ses articles)
+- **Commandes** : `POST /api/orders` (création, `payment_method: "COD" | "FEDAPAY"`), `GET /api/store/orders`, `PATCH /api/store/orders/:id/status`
+- **Paiement (FedaPay)** : `POST /api/orders` avec `payment_method: "FEDAPAY"` crée la transaction FedaPay et renvoie `payment_url` (à ouvrir côté client) ; `POST /api/fedapay/webhook` reçoit la confirmation de FedaPay et met à jour `payment_status` de la commande
 - **Livreur** : `GET /api/rider/orders/available`, `GET /api/rider/orders/mine`, `PATCH .../accept`, `PATCH .../status`
 - **GPS** : `POST /api/rider/location`, `GET /api/orders/:id/location`
 - **Fichiers** : `POST /api/store/upload`, `POST /api/rider/upload`, `GET /api/uploads/:key` (R2)
@@ -41,6 +44,9 @@ Cloudflare Workers + D1 (SQLite) + R2 (fichiers), tout dans le même Worker qui 
 
 Variables **Runtime** (Settings → Variables and Secrets, type Secret) :
 - `JWT_SECRET` — chaîne aléatoire (`openssl rand -hex 32`)
+- `FEDAPAY_MODE` — `sandbox` ou `live`
+- `FEDAPAY_SECRET_KEY` — clé secrète FedaPay (tableau de bord FedaPay, API Keys)
+- `FEDAPAY_WEBHOOK_KEY` — clé de signature du webhook FedaPay (à configurer aussi côté FedaPay : URL du webhook = `https://<ton-worker>.workers.dev/api/fedapay/webhook`)
 
 Build & deploy (déjà configurés dans `wrangler.jsonc` / les settings du projet) :
 - Build command : `npx expo export -p web`
@@ -51,7 +57,12 @@ Build & deploy (déjà configurés dans `wrangler.jsonc` / les settings du proje
 ```bash
 npx expo export -p web
 npx wrangler d1 execute mego-db --local --file=worker/schema.sql
-echo "JWT_SECRET=dev-secret" > .dev.vars
+cat > .dev.vars <<EOF
+JWT_SECRET=dev-secret
+FEDAPAY_MODE=sandbox
+FEDAPAY_SECRET_KEY=sk_sandbox_xxx
+FEDAPAY_WEBHOOK_KEY=whk_xxx
+EOF
 npx wrangler dev --local
 ```
 
@@ -60,6 +71,8 @@ Sert l'app ET l'API sur `http://localhost:8787` (ou le port choisi), en local, s
 ## Ce qui n'est PAS encore branché sur le backend MeGo
 
 Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue, upload de photo produit (l'API existe côté Worker, pas encore reliée à l'écran d'ajout de produit).
+
+**App client (commande)** : le backend est prêt (parcourir les boutiques/le menu, passer commande en COD ou FedaPay, suivre une commande), mais les écrans client (`app/client/...` : liste des boutiques → menu → panier → paiement → suivi) restent à construire, sur le modèle du parcours Enatega (Main → Restaurant → Cart → Checkout → OrderDetail).
 
 ## À faire avant un build mobile (Android/iOS) de production
 
