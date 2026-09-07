@@ -8,6 +8,14 @@ export interface ILoginInitialValues {
   password: string;
 }
 
+export interface ISignUpInitialValues {
+  name: string;
+  email: string;
+  storeName: string;
+  phone: string;
+  password: string;
+}
+
 export interface IAuthContext {
   isInitialized: boolean;
   token: string;

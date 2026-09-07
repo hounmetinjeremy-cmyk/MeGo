@@ -2,6 +2,7 @@
 import { Formik } from "formik";
 import { useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 // React Native
 import {
   KeyboardAvoidingView,
@@ -278,6 +279,15 @@ const LoginScreen = () => {
                       isLoading={isLogging}
                       onPress={() => handleSubmit()}
                     />
+
+                    <TouchableOpacity
+                      onPress={() => router.push("/store/register")}
+                      className="mt-4"
+                    >
+                      <Text className="text-sm" style={{ color: appTheme.primary }}>
+                        {t("Pas encore de compte ? S'inscrire")}
+                      </Text>
+                    </TouchableOpacity>
                     {/* <TouchableOpacity
                     className="h-12 rounded-3xl py-3 mt-10 w-full"
                     style={{ backgroundColor: appTheme.primary }}

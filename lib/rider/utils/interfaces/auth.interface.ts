@@ -8,6 +8,13 @@ export interface ILoginInitialValues {
   password: string;
 }
 
+export interface ISignUpInitialValues {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
 export interface IAuthContext {
   token: string;
   isAuthReady: boolean;
