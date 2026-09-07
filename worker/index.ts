@@ -425,6 +425,28 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
+  // ---- Admin: accounts (riders & vendors are onboarded by admin, not self-registration) ----
+  if (pathname === "/api/admin/users" && method === "GET") {
+    const auth = await requireRole(request, env, "admin");
+    if (auth instanceof Response) return auth;
+    const role = url.searchParams.get("role");
+    if (role !== "rider" && role !== "store") return error("role must be 'rider' or 'store'");
+
+    if (role === "rider") {
+      const { results } = await env.DB.prepare(
+        "SELECT id, email, name, phone, created_at FROM users WHERE role = 'rider' ORDER BY created_at DESC",
+      ).all();
+      return json({ users: results });
+    }
+
+    const { results } = await env.DB.prepare(
+      `SELECT u.id, u.email, u.name, u.phone, u.created_at, s.name AS store_name
+       FROM users u LEFT JOIN stores s ON s.owner_id = u.id
+       WHERE u.role = 'store' ORDER BY u.created_at DESC`,
+    ).all();
+    return json({ users: results });
+  }
+
   // ---- Admin: delivery zones ----
   if (pathname === "/api/admin/zones" && method === "GET") {
     const auth = await requireRole(request, env, "admin");

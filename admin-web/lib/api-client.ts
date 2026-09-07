@@ -279,3 +279,32 @@ export function updateZone(
 export function deleteZone(id: string) {
   return request<{ ok: true }>(`/api/admin/zones/${id}`, { method: "DELETE" });
 }
+
+// ---- Admin: accounts (riders & vendors are onboarded by admin) ----
+export interface MeGoManagedUser {
+  id: string;
+  email: string;
+  name: string;
+  phone: string | null;
+  created_at: string;
+  store_name?: string | null;
+}
+
+export function listUsersByRole(role: "rider" | "store") {
+  return request<{ users: MeGoManagedUser[] }>(`/api/admin/users?role=${role}`);
+}
+
+export function createAccount(input: {
+  email: string;
+  password: string;
+  name: string;
+  role: "rider" | "store";
+  phone?: string;
+  storeName?: string;
+}) {
+  return request<{ token: string; user: MeGoUser }>("/api/auth/register", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+}

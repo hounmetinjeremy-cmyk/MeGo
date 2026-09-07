@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
@@ -128,7 +129,12 @@ export default function ZonesPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">MeGo Admin — Zones de livraison</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold">MeGo Admin — Zones de livraison</h1>
+          <Link href="/accounts" className="text-sm text-blue-600 underline">
+            Comptes vendeurs/livreurs
+          </Link>
+        </div>
         <CustomButton
           label="Se déconnecter"
           className="h-9 rounded border border-gray-300 bg-transparent px-4 text-black"
