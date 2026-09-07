@@ -6,4 +6,4 @@
 :HL["/shop/_next/static/css/1caa0c71e5270a34.css","style"]
 :HL["/shop/_next/static/css/b5fe71a94d639536.css","style"]
 :HL["/shop/_next/static/css/ccc504167c6b853d.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"(localized)","param":null,"prefetchHints":0,"slots":{"children":{"name":"rider","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"mfsY1UJCitft84ZfgSNke"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"(localized)","param":null,"prefetchHints":0,"slots":{"children":{"name":"rider","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"PVPxC1FwFftIUSlbfM-I7"}

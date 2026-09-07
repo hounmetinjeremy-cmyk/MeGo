@@ -286,7 +286,7 @@
       }
     }
   }
-`},15383:(e,t,i)=>{i.d(t,{pc:()=>s,Bt:()=>o,Nj:()=>$,uD:()=>a,OJ:()=>A,xz:()=>g,rw:()=>y,HC:()=>I,bg:()=>_,p6:()=>f,ZZ:()=>T,Qy:()=>p,SU:()=>d,rl:()=>m,gf:()=>S.gf,Qw:()=>c,P2:()=>n,vh:()=>v});var r=i(16763);let a=(0,r.J1)`
+`},15383:(e,t,i)=>{i.d(t,{pc:()=>s,Bt:()=>o,Nj:()=>y,uD:()=>a,OJ:()=>$,xz:()=>m,rw:()=>g,HC:()=>A,bg:()=>f,p6:()=>S,ZZ:()=>T,Qy:()=>p,SU:()=>d,gf:()=>v.gf,Qw:()=>c,P2:()=>n,vh:()=>I});var r=i(16763);let a=(0,r.J1)`
   query Configuration {
     configuration {
       _id
@@ -446,7 +446,7 @@
       ...RestaurantCarouselPreviewFields
     }
   }
-`,m=(0,r.J1)`
+`;(0,r.J1)`
   ${l}
   query Restaurants(
     $latitude: Float
@@ -467,7 +467,7 @@
       }
     }
   }
-`,g=(0,r.J1)`
+`;let m=(0,r.J1)`
   query RestaurantByIdAndSlug($id: String, $slug: String) {
     restaurant(id: $id, slug: $slug) {
       _id
@@ -557,7 +557,7 @@
       }
     }
   }
-`,y=(0,r.J1)`
+`,g=(0,r.J1)`
   query GetReviewsByRestaurant($restaurant: String!) {
     reviewsByRestaurant(restaurant: $restaurant) {
       reviews {
@@ -585,7 +585,7 @@
       total
     }
   }
-`,$=(0,r.J1)`
+`,y=(0,r.J1)`
   query FetchCategoryDetailsByStoreId($storeId: String!) {
     fetchCategoryDetailsByStoreId(storeId: $storeId) {
       id
@@ -600,14 +600,14 @@
       }
     }
   }
-`,A=(0,r.J1)`
+`,$=(0,r.J1)`
   query PopularItems($restaurantId: String!) {
     popularItems(restaurantId: $restaurantId) {
       id
       count
     }
   }
-`,I=(0,r.J1)`
+`,A=(0,r.J1)`
   query subCategories {
     subCategories {
       _id
@@ -615,14 +615,14 @@
       parentCategoryId
     }
   }
-`,v=(0,r.J1)`
+`,I=(0,r.J1)`
   ${u}
   query TopRatedVendors($latitude: Float!, $longitude: Float!) {
     topRatedVendorsPreview(latitude: $latitude, longitude: $longitude) {
       ...RestaurantCarouselPreviewFields
     }
   }
-`;var S=i(4532);let f=(0,r.J1)`
+`;var v=i(4532);let S=(0,r.J1)`
         query{
           profile{
             _id
@@ -644,7 +644,7 @@
             }
             favourite
           }
-        }`,_=(0,r.J1)`
+        }`,f=(0,r.J1)`
   query UserFavourite($latitude: Float, $longitude: Float) {
     userFavourite(latitude: $latitude, longitude: $longitude) {
       _id
@@ -736,7 +736,7 @@
       isActive
     }
   }
-`},16261:(e,t,i)=>{i.d(t,{ED:()=>o,Iu:()=>n,Pg:()=>a,YB:()=>d,xz:()=>s});var r=i(87358);let a={MULTI:"MULTI",SINGLE:"SINGLE"},o=a.MULTI,d="@enatega/app-mode",n=()=>{let e=r.env.NEXT_PUBLIC_VENDOR_MODE?.toUpperCase();return e===a.SINGLE?a.SINGLE:e===a.MULTI?a.MULTI:null},s=e=>e===a.MULTI||e===a.SINGLE},16771:(e,t,i)=>{i.d(t,{$_:()=>m,BG:()=>c,HD:()=>k,Hp:()=>o,Jg:()=>u,Nn:()=>f,Os:()=>A,S3:()=>n,UR:()=>l,Uy:()=>_,Wf:()=>D,a$:()=>w,dV:()=>p,f1:()=>y,ju:()=>I,lb:()=>g,mZ:()=>O,pU:()=>v,q2:()=>$,qA:()=>C,qN:()=>S,qx:()=>T,xm:()=>h,y4:()=>s,yZ:()=>d,yu:()=>P,zz:()=>a});var r=i(16763);let a=(0,r.J1)`
+`},16261:(e,t,i)=>{i.d(t,{ED:()=>o,Iu:()=>n,Pg:()=>a,YB:()=>d,xz:()=>s});var r=i(87358);let a={MULTI:"MULTI",SINGLE:"SINGLE"},o=a.MULTI,d="@enatega/app-mode",n=()=>{let e=r.env.NEXT_PUBLIC_VENDOR_MODE?.toUpperCase();return e===a.SINGLE?a.SINGLE:e===a.MULTI?a.MULTI:null},s=e=>e===a.MULTI||e===a.SINGLE},16771:(e,t,i)=>{i.d(t,{$_:()=>m,BG:()=>c,HD:()=>k,Hp:()=>o,Jg:()=>u,Nn:()=>f,Os:()=>A,S3:()=>n,UR:()=>l,Uy:()=>T,Wf:()=>D,a$:()=>w,dV:()=>p,f1:()=>y,ju:()=>I,lb:()=>g,mZ:()=>O,pU:()=>v,q2:()=>$,qA:()=>C,qN:()=>S,qx:()=>_,xm:()=>h,y4:()=>s,yZ:()=>d,yu:()=>P,zz:()=>a});var r=i(16763);let a=(0,r.J1)`
   query SingleVendorDiscovery($previewLimit: Int, $dealLimit: Int) {
     singleVendorDiscovery(previewLimit: $previewLimit, dealLimit: $dealLimit) {
       catalogVersion
@@ -1535,7 +1535,7 @@
       deliveredAt
     }
   }
-`,_=(0,r.J1)`
+`,T=(0,r.J1)`
   query GetFavoriteFoodsSingleVendor($limit: Int, $skip: Int) {
     getFavoriteFoodsSingleVendor(limit: $limit, skip: $skip) {
       success
@@ -1571,7 +1571,7 @@
       isFavorite
     }
   }
-`;let T=(0,r.J1)`
+`;let _=(0,r.J1)`
   query SingleVendorVouchers {
     couponsbyRestaurant {
       _id
@@ -1933,7 +1933,7 @@
       }
     }
   }
-`},18761:(e,t,i)=>{i.d(t,{C3:()=>r.C3,CY:()=>r.CY,Cf:()=>r.Cf,Dw:()=>r.Dw,E4:()=>r.E4,Ec:()=>r.Ec,HC:()=>a.HC,Kk:()=>r.Kk,Nj:()=>a.Nj,OJ:()=>a.OJ,Ou:()=>r.Ou,P2:()=>a.P2,Qw:()=>a.Qw,S3:()=>r.S3,Y8:()=>r.Y8,ZZ:()=>a.ZZ,Ze:()=>r.Ze,Zh:()=>r.Zh,Zt:()=>r.Zt,bg:()=>a.bg,eq:()=>r.eq,gf:()=>a.gf,hO:()=>r.hO,ox:()=>r.ox,p6:()=>a.p6,pc:()=>a.pc,rw:()=>a.rw,s_:()=>r.s_,se:()=>r.se,vh:()=>a.vh,xz:()=>a.xz,zY:()=>r.zY});var r=i(35036),a=i(15383)},25095:(e,t,i)=>{i.d(t,{DS:()=>g,Xb:()=>p,Yq:()=>m,ko:()=>u,m9:()=>function e(t=(0,r.FD)()){let i=s();if(!i)return null;let o=i.getItem(l(a,t));return o||(u(t),e(t))},oV:()=>c});var r=i(89561);let a="_px3k9",o="_zt7m2",d="_qw4v8",n="_rf8n1";function s(){return window.localStorage}let l=(e,t)=>(0,r.cX)(e,t);function u(e=(0,r.FD)()){let t=s();if(t&&!t.getItem(l(a,e))){let i,r=(i=new Uint8Array(16),crypto.getRandomValues(i),Array.from(i,e=>e.toString(16).padStart(2,"0")).join(""));t.setItem(l(a,e),r)}}function c(e,t,i=(0,r.FD)()){let a=s();a&&(a.setItem(l(o,i),e),a.setItem(l(d,i),t),a.setItem(l(n,i),Date.now().toString()))}function p(e=(0,r.FD)()){return s()?.getItem(l(o,e))??null}function m(e=(0,r.FD)()){let t=s();if(!t)return!1;let i=t.getItem(l(o,e)),a=t.getItem(l(d,e)),u=t.getItem(l(n,e));if(!i||!a)return!0;let c=new Date(a).getTime(),p=Date.now();return!!(p>=c)||!!(p>=c-1e4)&&(!u||p-parseInt(u,10)>=5e3)}function g(e=(0,r.FD)()){let t=s();t&&(t.removeItem(l(a,e)),t.removeItem(l(o,e)),t.removeItem(l(d,e)),t.removeItem(l(n,e)))}},30561:(e,t,i)=>{i.d(t,{K:()=>d,L:()=>n});var r=i(16261),a=i(87358);let o=(e="")=>e.endsWith("/graphql")?e:`${e.replace(/\/$/,"")}/graphql`,d=()=>(0,r.Iu)()===r.Pg.SINGLE||"true"===a.env.NEXT_PUBLIC_SINGLE_VENDOR_ENABLED,n=e=>{let t=e===r.Pg.SINGLE,i=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_SERVER_URL:a.env.NEXT_PUBLIC_SERVER_URL,d=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_WS_SERVER_URL:a.env.NEXT_PUBLIC_WS_SERVER_URL,n=t&&a.env.NEXT_PUBLIC_SINGLE_VENDOR_REST_URL||i;return{mode:e,graphqlUrl:o(i),websocketUrl:o(d),restUrl:((e="")=>e?`${e.replace(/\/$/,"")}/`:"")(n),publicAccessRequired:!0}}},35036:(e,t,i)=>{i.d(t,{cK:()=>h,Y8:()=>o,Ze:()=>$,Zt:()=>I,fJ:()=>n,C3:()=>d,ox:()=>l,s_:()=>m,S3:()=>s,Kk:()=>u,Dw:()=>T,Ou:()=>g,Zh:()=>y,Cf:()=>a,CY:()=>c,eq:()=>p,se:()=>A,zY:()=>S,Ec:()=>v,E4:()=>f,hO:()=>_});var r=i(16763);let a=(0,r.J1)`
+`},18761:(e,t,i)=>{i.d(t,{C3:()=>r.C3,CY:()=>r.CY,Cf:()=>r.Cf,Dw:()=>r.Dw,E4:()=>r.E4,Ec:()=>r.Ec,HC:()=>a.HC,Kk:()=>r.Kk,Nj:()=>a.Nj,OJ:()=>a.OJ,Ou:()=>r.Ou,P2:()=>a.P2,Qw:()=>a.Qw,S3:()=>r.S3,Y8:()=>r.Y8,ZZ:()=>a.ZZ,Ze:()=>r.Ze,Zh:()=>r.Zh,Zt:()=>r.Zt,bg:()=>a.bg,eq:()=>r.eq,gf:()=>a.gf,hO:()=>r.hO,ox:()=>r.ox,p6:()=>a.p6,pc:()=>a.pc,rw:()=>a.rw,s_:()=>r.s_,se:()=>r.se,vh:()=>a.vh,xz:()=>a.xz,zY:()=>r.zY});var r=i(35036),a=i(15383)},25095:(e,t,i)=>{i.d(t,{DS:()=>g,Xb:()=>p,Yq:()=>m,ko:()=>u,m9:()=>function e(t=(0,r.FD)()){let i=s();if(!i)return null;let o=i.getItem(l(a,t));return o||(u(t),e(t))},oV:()=>c});var r=i(89561);let a="_px3k9",o="_zt7m2",d="_qw4v8",n="_rf8n1";function s(){return window.localStorage}let l=(e,t)=>(0,r.cX)(e,t);function u(e=(0,r.FD)()){let t=s();if(t&&!t.getItem(l(a,e))){let i,r=(i=new Uint8Array(16),crypto.getRandomValues(i),Array.from(i,e=>e.toString(16).padStart(2,"0")).join(""));t.setItem(l(a,e),r)}}function c(e,t,i=(0,r.FD)()){let a=s();a&&(a.setItem(l(o,i),e),a.setItem(l(d,i),t),a.setItem(l(n,i),Date.now().toString()))}function p(e=(0,r.FD)()){return s()?.getItem(l(o,e))??null}function m(e=(0,r.FD)()){let t=s();if(!t)return!1;let i=t.getItem(l(o,e)),a=t.getItem(l(d,e)),u=t.getItem(l(n,e));if(!i||!a)return!0;let c=new Date(a).getTime(),p=Date.now();return!!(p>=c)||!!(p>=c-1e4)&&(!u||p-parseInt(u,10)>=5e3)}function g(e=(0,r.FD)()){let t=s();t&&(t.removeItem(l(a,e)),t.removeItem(l(o,e)),t.removeItem(l(d,e)),t.removeItem(l(n,e)))}},30561:(e,t,i)=>{i.d(t,{K:()=>d,L:()=>n});var r=i(16261),a=i(87358);let o=(e="")=>e.endsWith("/graphql")?e:`${e.replace(/\/$/,"")}/graphql`,d=()=>(0,r.Iu)()===r.Pg.SINGLE||!0,n=e=>{let t=e===r.Pg.SINGLE,i=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_SERVER_URL:a.env.NEXT_PUBLIC_SERVER_URL,d=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_WS_SERVER_URL:a.env.NEXT_PUBLIC_WS_SERVER_URL,n=t&&a.env.NEXT_PUBLIC_SINGLE_VENDOR_REST_URL||i;return{mode:e,graphqlUrl:o(i),websocketUrl:o(d),restUrl:((e="")=>e?`${e.replace(/\/$/,"")}/`:"")(n),publicAccessRequired:!0}}},35036:(e,t,i)=>{i.d(t,{cK:()=>h,Y8:()=>o,Ze:()=>$,Zt:()=>I,fJ:()=>n,C3:()=>d,ox:()=>l,s_:()=>m,S3:()=>s,Kk:()=>u,Dw:()=>_,Ou:()=>g,Zh:()=>y,Cf:()=>a,CY:()=>c,eq:()=>p,se:()=>A,zY:()=>S,Ec:()=>v,E4:()=>f,hO:()=>T});var r=i(16763);let a=(0,r.J1)`
   mutation SelectAddress($id: String!) {
     selectAddress(id: $id) {
       _id
@@ -2168,13 +2168,13 @@
       success
       message
     }
-  }`,_=(0,r.J1)` mutation updateNotificationStatus($orderNotification: Boolean!, $offerNotification: Boolean! ) {
+  }`,T=(0,r.J1)` mutation updateNotificationStatus($orderNotification: Boolean!, $offerNotification: Boolean! ) {
    updateNotificationStatus(offerNotification:$offerNotification,orderNotification:$orderNotification){
     name,
     phone,
    }
   }
-`,T=(0,r.J1)`
+`,_=(0,r.J1)`
   mutation PlaceOrder(
     $restaurant: String!
     $orderInput: [OrderInput!]!
@@ -2402,4 +2402,4 @@
       }
     }
   }
-`},53640:(e,t,i)=>{i.d(t,{p:()=>a});var r=i(89561);let a=(e,t,i="")=>{switch(e){case"get":try{return r.vi.get(t)}catch(e){return""}case"save":try{return r.vi.set(t,i),t}catch(e){return""}case"delete":try{return r.vi.remove(t),t}catch(e){return""}default:return""}}},56788:(e,t,i)=>{i.d(t,{LT:()=>a.L,Pg:()=>r.Pg,U6:()=>n.U6,mC:()=>d.mC,q:()=>n.q,qt:()=>n.qt,vi:()=>o.vi,xz:()=>r.xz});var r=i(16261),a=i(30561),o=i(89561),d=i(59386),n=i(74203)},59386:(e,t,i)=>{i.d(t,{I1:()=>d,ZR:()=>s,mC:()=>n});var r=i(16261);let a=[/^\/restaurants/,/^\/store/,/^\/mapview/,/^\/restaurantInfo/],o=[/^\/deals/,/^\/browse/,/^\/product\//,/^\/profile\/(favorites|vouchers|wallet|membership|referral)/],d=(e,t)=>!(t===r.Pg.SINGLE?a:o).some(t=>t.test(e)),n=e=>e===r.Pg.SINGLE?"/discovery":"/",s=e=>n(e)},68715:(e,t,i)=>{i.d(t,{Lr:()=>u,Rz:()=>n,iD:()=>s,kO:()=>l});var r=i(25095),a=i(89561);let o={TOKEN:"token",USER_TYPE:"userType",USER_ID:"userId",TOKEN_EXPIRATION:"tokenExpiration"},d=["userToken","userAddress","searchedKeywords","restaurant","cartItems","newOrderInstructions","orderInstructions","applied_coupon","coupon_text","is_coupon_applied","coupon_restaurant_id","pending_stripe_order_id","pending_stripe_started_at"];function n(e,t=(0,a.FD)()){e.token&&a.vi.set(o.TOKEN,e.token,t),e.userType&&a.vi.set(o.USER_TYPE,e.userType,t),e.userId&&a.vi.set(o.USER_ID,e.userId,t),e.tokenExpiration&&a.vi.set(o.TOKEN_EXPIRATION,String(e.tokenExpiration),t)}function s(e=(0,a.FD)()){return a.vi.get(o.TOKEN,e)??""}function l(e=(0,a.FD)()){return!!a.vi.get(o.TOKEN,e)}function u(e=(0,a.FD)()){!function(e=(0,a.FD)()){!function(e=(0,a.FD)()){Object.values(o).forEach(t=>a.vi.remove(t,e))}(e),d.forEach(t=>a.vi.remove(t,e)),(0,r.DS)(e)}(e)}},74203:(e,t,i)=>{i.d(t,{U6:()=>c,q:()=>p,qt:()=>m});var r=i(95155),a=i(73321),o=i(12115),d=i(16261),n=i(30561),s=i(89561),l=i(59386);let u=(0,o.createContext)(null);function c({children:e}){let t=(0,a.useRouter)(),[i,p]=(0,o.useState)(d.ED),[m,g]=(0,o.useState)(!1),[y,$]=(0,o.useState)(!1),[A,I]=(0,o.useState)(0),v=(0,o.useRef)(new Set),S=(0,d.Iu)(),f=null===S,_=(0,n.K)();(0,o.useEffect)(()=>{(0,s.fT)();let e=window.localStorage.getItem(d.YB);if(S){s.vi.set(d.YB,S),p(S),g(!0);return}let t=(0,d.xz)(e)?e:d.ED;t!==d.Pg.SINGLE||_?p(t):(s.vi.set(d.YB,d.Pg.MULTI),p(d.Pg.MULTI)),g(!0)},[S,_]);let T=(0,o.useCallback)(async e=>{if(!(0,d.xz)(e)||!f||e===i||v.current.size>0||e===d.Pg.SINGLE&&!_)return!1;$(!0);try{return s.vi.set(d.YB,e),p(e),t.replace((0,l.ZR)(e)),!0}finally{$(!1)}},[f,i,t,_]),h=(0,o.useCallback)(()=>{let e=Symbol("mode-sensitive-operation");return v.current.add(e),I(v.current.size),()=>{v.current.delete(e),I(v.current.size)}},[]),w=(0,o.useMemo)(()=>({mode:i,isModeReady:m,isSwitchingMode:y,isModeSwitchBlocked:A>0,singleVendorAvailable:_,isModeToggleEnabled:f,isSingleVendor:i===d.Pg.SINGLE,switchMode:T,beginModeSensitiveOperation:h}),[i,m,y,A,_,f,T,h]);return(0,r.jsx)(u.Provider,{value:w,children:e})}let p=()=>{let e=(0,o.useContext)(u);if(!e)throw Error("useAppMode must be used inside AppModeProvider");return e},m=e=>{let{beginModeSensitiveOperation:t}=p();(0,o.useEffect)(()=>e?t():void 0,[e,t])}},89561:(e,t,i)=>{i.d(t,{FD:()=>d,cX:()=>n,fT:()=>l,vi:()=>s});var r=i(16261);let a=new Set([r.YB,"theme","locale","NEXT_LOCALE","messaging-token","pendingOrderNavigation","knownOrderOrigins"]),o=["token","userType","userId","tokenExpiration","userToken","userAddress","location","restaurant","restaurant-slug","restaurantData","cartItems","cart-product-store-id","cart-product-store-slug","currentShopType","newOrderInstructions","orderInstructions","applied_coupon","coupon_text","is_coupon_applied","coupon_restaurant_id","pending_stripe_order_id","pending_stripe_started_at","searchedKeywords"],d=()=>{let e=window.localStorage.getItem(r.YB);return(0,r.xz)(e)?e:r.ED},n=(e,t=d())=>a.has(e)?e:`@enatega/${t.toLowerCase()}/${e}`,s={get:(e,t)=>window.localStorage.getItem(n(e,t)),set(e,t,i){window.localStorage.setItem(n(e,i),t)},remove(e,t){window.localStorage.removeItem(n(e,t))}},l=()=>{let e="@enatega/multi/storage-migrated-v1";if("true"!==window.localStorage.getItem(e)){for(let e of o){let t=window.localStorage.getItem(e),i=n(e,r.Pg.MULTI);null!==t&&null===window.localStorage.getItem(i)&&window.localStorage.setItem(i,t)}window.localStorage.setItem(e,"true")}}}}]);
+`},53640:(e,t,i)=>{i.d(t,{p:()=>a});var r=i(89561);let a=(e,t,i="")=>{switch(e){case"get":try{return r.vi.get(t)}catch(e){return""}case"save":try{return r.vi.set(t,i),t}catch(e){return""}case"delete":try{return r.vi.remove(t),t}catch(e){return""}default:return""}}},56788:(e,t,i)=>{i.d(t,{LT:()=>a.L,Pg:()=>r.Pg,U6:()=>n.U6,mC:()=>d.mC,q:()=>n.q,qt:()=>n.qt,vi:()=>o.vi,xz:()=>r.xz});var r=i(16261),a=i(30561),o=i(89561),d=i(59386),n=i(74203)},59386:(e,t,i)=>{i.d(t,{I1:()=>d,ZR:()=>s,mC:()=>n});var r=i(16261);let a=[/^\/restaurants/,/^\/store/,/^\/mapview/,/^\/restaurantInfo/],o=[/^\/deals/,/^\/browse/,/^\/product\//,/^\/profile\/(favorites|vouchers|wallet|membership|referral)/],d=(e,t)=>!(t===r.Pg.SINGLE?a:o).some(t=>t.test(e)),n=e=>e===r.Pg.SINGLE?"/discovery":"/",s=e=>n(e)},68715:(e,t,i)=>{i.d(t,{Lr:()=>u,Rz:()=>n,iD:()=>s,kO:()=>l});var r=i(25095),a=i(89561);let o={TOKEN:"token",USER_TYPE:"userType",USER_ID:"userId",TOKEN_EXPIRATION:"tokenExpiration"},d=["userToken","userAddress","searchedKeywords","restaurant","cartItems","newOrderInstructions","orderInstructions","applied_coupon","coupon_text","is_coupon_applied","coupon_restaurant_id","pending_stripe_order_id","pending_stripe_started_at"];function n(e,t=(0,a.FD)()){e.token&&a.vi.set(o.TOKEN,e.token,t),e.userType&&a.vi.set(o.USER_TYPE,e.userType,t),e.userId&&a.vi.set(o.USER_ID,e.userId,t),e.tokenExpiration&&a.vi.set(o.TOKEN_EXPIRATION,String(e.tokenExpiration),t)}function s(e=(0,a.FD)()){return a.vi.get(o.TOKEN,e)??""}function l(e=(0,a.FD)()){return!!a.vi.get(o.TOKEN,e)}function u(e=(0,a.FD)()){!function(e=(0,a.FD)()){!function(e=(0,a.FD)()){Object.values(o).forEach(t=>a.vi.remove(t,e))}(e),d.forEach(t=>a.vi.remove(t,e)),(0,r.DS)(e)}(e)}},74203:(e,t,i)=>{i.d(t,{U6:()=>c,q:()=>p,qt:()=>m});var r=i(95155),a=i(73321),o=i(12115),d=i(16261),n=i(30561),s=i(89561),l=i(59386);let u=(0,o.createContext)(null);function c({children:e}){let t=(0,a.useRouter)(),[i,p]=(0,o.useState)(d.ED),[m,g]=(0,o.useState)(!1),[y,$]=(0,o.useState)(!1),[A,I]=(0,o.useState)(0),v=(0,o.useRef)(new Set),S=(0,d.Iu)(),f=null===S,T=(0,n.K)();(0,o.useEffect)(()=>{(0,s.fT)();let e=window.localStorage.getItem(d.YB);if(S){s.vi.set(d.YB,S),p(S),g(!0);return}let t=(0,d.xz)(e)?e:d.ED;t!==d.Pg.SINGLE||T?p(t):(s.vi.set(d.YB,d.Pg.MULTI),p(d.Pg.MULTI)),g(!0)},[S,T]);let _=(0,o.useCallback)(async e=>{if(!(0,d.xz)(e)||!f||e===i||v.current.size>0||e===d.Pg.SINGLE&&!T)return!1;$(!0);try{return s.vi.set(d.YB,e),p(e),t.replace((0,l.ZR)(e)),!0}finally{$(!1)}},[f,i,t,T]),h=(0,o.useCallback)(()=>{let e=Symbol("mode-sensitive-operation");return v.current.add(e),I(v.current.size),()=>{v.current.delete(e),I(v.current.size)}},[]),w=(0,o.useMemo)(()=>({mode:i,isModeReady:m,isSwitchingMode:y,isModeSwitchBlocked:A>0,singleVendorAvailable:T,isModeToggleEnabled:f,isSingleVendor:i===d.Pg.SINGLE,switchMode:_,beginModeSensitiveOperation:h}),[i,m,y,A,T,f,_,h]);return(0,r.jsx)(u.Provider,{value:w,children:e})}let p=()=>{let e=(0,o.useContext)(u);if(!e)throw Error("useAppMode must be used inside AppModeProvider");return e},m=e=>{let{beginModeSensitiveOperation:t}=p();(0,o.useEffect)(()=>e?t():void 0,[e,t])}},89561:(e,t,i)=>{i.d(t,{FD:()=>d,cX:()=>n,fT:()=>l,vi:()=>s});var r=i(16261);let a=new Set([r.YB,"theme","locale","NEXT_LOCALE","messaging-token","pendingOrderNavigation","knownOrderOrigins"]),o=["token","userType","userId","tokenExpiration","userToken","userAddress","location","restaurant","restaurant-slug","restaurantData","cartItems","cart-product-store-id","cart-product-store-slug","currentShopType","newOrderInstructions","orderInstructions","applied_coupon","coupon_text","is_coupon_applied","coupon_restaurant_id","pending_stripe_order_id","pending_stripe_started_at","searchedKeywords"],d=()=>{let e=window.localStorage.getItem(r.YB);return(0,r.xz)(e)?e:r.ED},n=(e,t=d())=>a.has(e)?e:`@enatega/${t.toLowerCase()}/${e}`,s={get:(e,t)=>window.localStorage.getItem(n(e,t)),set(e,t,i){window.localStorage.setItem(n(e,i),t)},remove(e,t){window.localStorage.removeItem(n(e,t))}},l=()=>{let e="@enatega/multi/storage-migrated-v1";if("true"!==window.localStorage.getItem(e)){for(let e of o){let t=window.localStorage.getItem(e),i=n(e,r.Pg.MULTI);null!==t&&null===window.localStorage.getItem(i)&&window.localStorage.setItem(i,t)}window.localStorage.setItem(e,"true")}}}}]);

@@ -3,5 +3,5 @@
 3:I[79124,["1011","static/chunks/app/(localized)/(restaurant-store)/layout-41dd2a3f17564dcc.js"],"default"]
 4:I[57121,[],""]
 5:I[74581,[],""]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"Component":"$3","slots":{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]},"serverProvidedParams":{"params":{},"promises":["$@6"]}}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"mfsY1UJCitft84ZfgSNke"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"Component":"$3","slots":{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]},"serverProvidedParams":{"params":{},"promises":["$@6"]}}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"PVPxC1FwFftIUSlbfM-I7"}
 6:"$0:rsc:props:children:1:props:serverProvidedParams:params"
