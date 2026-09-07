@@ -97,17 +97,24 @@ Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas —
 
 Un compte `admin` (accès à `/admin/zones` et `/admin/accounts`) a été créé directement en base — il n'y a pas d'inscription publique pour ce rôle (un compte admin est sensible, mieux vaut ne pas l'exposer à l'inscription libre). Les identifiants t'ont été donnés en message ; si tu les as perdus, redemande-moi de créer un nouveau compte admin ou de réinitialiser le mot de passe.
 
-### Inscription vendeur/livreur : deux façons de créer un compte
+### Comptes unifiés : un seul compte, plusieurs casquettes
 
-Il y a désormais deux façons de créer un compte vendeur ou livreur (les deux utilisent le même backend, `POST /api/auth/register`, donc les comptes créés par l'une ou l'autre sont identiques et interchangeables) :
+Un compte n'a plus un rôle figé et exclusif. N'importe quel compte peut, à tout moment, **posséder une boutique** ET/OU **avoir un profil livreur actif**, en plus de rester un client normal — comme créer une page sur un réseau social plutôt que devoir choisir un statut à l'inscription. C'est la capacité réelle (une ligne dans `stores` ou `rider_profiles`) qui donne accès aux écrans vendeur/livreur, pas le rôle d'origine du compte (voir `requireRole()` dans `worker/index.ts`).
 
-1. **Auto-inscription** (écran de connexion des apps mobiles `/rider` et `/store`) : un lien "Pas encore de compte ? S'inscrire" sous le bouton de connexion ouvre un formulaire (nom, e-mail, mot de passe, téléphone optionnel, + nom de la boutique pour un vendeur). À la validation, le compte est créé, la personne est connectée automatiquement et atterrit directement sur son tableau de bord — aucune étape admin requise.
-2. **Création par un administrateur** — page **`/admin/accounts`** du site vendeur : un compte `admin` s'y connecte, choisit l'onglet "Vendeurs" ou "Livreurs", et crée le compte à la main (utile si l'admin veut lui-même distribuer les identifiants plutôt que de laisser la personne s'inscrire).
+**Connexion unique** : `/login` est le seul point d'entrée — un bouton Google (Google Identity Services côté web), qui mène toujours à la même vitrine publique (`/client`, déjà l'espace public boutiques/produits). Depuis là, un bouton **"Mon compte"** ouvre un panneau où on peut :
+- créer sa boutique ("Devenir vendeur") et passer directement dans son espace vendeur (`/store`), sans reconnexion ;
+- activer/désactiver son profil livreur et ouvrir son espace livreur (`/rider`), sans reconnexion.
 
-- Backend : `POST /api/auth/register` (rôle `rider` ou `store`) ; `GET /api/admin/users?role=rider|store` (admin uniquement) liste les comptes existants par rôle.
-- Mobile : `lib/rider/ui/screens/register` et `lib/store/ui/screens/register` (routes `/rider/register`, `/store/register`).
-- Site vendeur : `/admin/accounts` (onglets Vendeurs/Livreurs, tableau + formulaire de création), lié depuis `/admin/zones` et vice-versa.
-- **Connexion avec Google** : pas encore implémentée (nécessite un client OAuth Google configuré côté Cloud Console + les identifiants natifs de l'app, actuellement en `REPLACE_ME` dans `app.json` — voir plus bas). À faire si tu veux ce mode de connexion en plus de l'e-mail/mot de passe.
+Les anciens parcours (formulaire e-mail/mot de passe par section, création par un admin sur `/admin/accounts`) existent toujours en secours et créent des comptes strictement identiques (même backend, même modèle) :
+1. **Auto-inscription par section** (`/rider/register`, `/store/register`) : lien "Pas encore de compte ? S'inscrire" sous le bouton de connexion.
+2. **Création par un administrateur** — page `/admin/accounts` du site vendeur.
+
+- Backend : `POST /api/auth/register` (e-mail/mot de passe), `POST /api/auth/google` (Google), `POST /api/stores` (devenir vendeur), `POST /api/rider-profile/activate|deactivate` (mode livreur), `GET /api/auth/me` (renvoie `storeId`/`isRiderActive`), `GET /api/public/stats` (compteurs publics pour la vitrine).
+- **Connexion Google — il manque un vrai identifiant OAuth pour que ça fonctionne réellement.** Le code est prêt des deux côtés mais affiche un message clair ("pas encore configurée") tant que ça manque :
+  - Backend : variable `GOOGLE_CLIENT_IDS` sur le Worker (liste d'identifiants clients autorisés, séparés par des virgules — un par plateforme si besoin).
+  - Web : `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (identifiant client **Web** du même projet Google Cloud).
+  - Il faut créer un projet OAuth sur [Google Cloud Console](https://console.cloud.google.com/apis/credentials), ajouter l'URL de production comme origine autorisée, et me redonner l'identifiant client Web — je le câble ensuite des deux côtés.
+  - Connexion Google native (iOS/Android) : pas encore possible, ça demande un vrai build natif (bloqué par les `REPLACE_ME` de `app.json`, voir plus bas) — le bouton mobile affiche un message d'attente et renvoie vers le web.
 
 ### Zones de livraison (carte + filtrage)
 
