@@ -44,28 +44,25 @@ export default {
     const url = new URL(request.url);
 
     if (!url.pathname.startsWith("/api/")) {
-      const assetResponse = await env.ASSETS.fetch(request);
       // /shop is a Next.js static export (client-web/) with real,
       // unbounded-cardinality store/restaurant ids that can't be
       // pre-rendered at build time — each got exactly one exported
-      // "placeholder" page. Cloudflare's own SPA fallback only covers the
-      // site root, so any /shop/store/<real-id>/... or
-      // /shop/restaurant/<real-id>/... path serves that placeholder's HTML
-      // here instead; the page then reads the real id from
-      // window.location on the client.
-      if (assetResponse.status === 404) {
-        const shopDetailMatch = url.pathname.match(
-          /^\/shop\/(store|restaurant)\/[^/]+\/[^/]+\/?$/,
-        );
-        if (shopDetailMatch) {
-          const shellUrl = new URL(
-            `/shop/${shopDetailMatch[1]}/placeholder/placeholder/`,
-            url,
-          );
-          return env.ASSETS.fetch(new Request(shellUrl, request));
-        }
+      // "placeholder" page. This code only runs at all because
+      // wrangler.jsonc's assets.run_worker_first includes "/shop/*" —
+      // without that, Cloudflare's assets layer serves every /shop/* request
+      // itself (applying not_found_handling's SPA fallback) and this Worker
+      // is never invoked. Any /shop/store/<real id>/... or
+      // /shop/restaurant/<real id>/... path (other than the placeholder
+      // shell itself) is rewritten to that placeholder's HTML; the page then
+      // reads the real id from window.location on the client.
+      const shopDetailMatch = url.pathname.match(
+        /^\/shop\/(store|restaurant)\/([^/]+)\/([^/]+)\/?$/,
+      );
+      if (shopDetailMatch && !(shopDetailMatch[2] === "placeholder" && shopDetailMatch[3] === "placeholder")) {
+        const shellUrl = new URL(`/shop/${shopDetailMatch[1]}/placeholder/placeholder/`, url);
+        return env.ASSETS.fetch(new Request(shellUrl, request));
       }
-      return assetResponse;
+      return env.ASSETS.fetch(request);
     }
 
     try {

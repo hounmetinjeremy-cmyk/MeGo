@@ -286,7 +286,7 @@
       }
     }
   }
-`},15383:(e,t,i)=>{i.d(t,{pc:()=>s,Bt:()=>o,Nj:()=>y,uD:()=>a,OJ:()=>$,xz:()=>m,rw:()=>g,HC:()=>A,bg:()=>f,p6:()=>S,ZZ:()=>T,Qy:()=>p,SU:()=>d,gf:()=>v.gf,Qw:()=>c,P2:()=>n,vh:()=>I});var r=i(16763);let a=(0,r.J1)`
+`},15383:(e,t,i)=>{i.d(t,{pc:()=>s,Bt:()=>o,Nj:()=>g,uD:()=>a,OJ:()=>y,rw:()=>m,HC:()=>$,bg:()=>S,p6:()=>v,ZZ:()=>f,Qy:()=>p,SU:()=>d,gf:()=>I.gf,Qw:()=>c,P2:()=>n,vh:()=>A});var r=i(16763);let a=(0,r.J1)`
   query Configuration {
     configuration {
       _id
@@ -467,7 +467,7 @@
       }
     }
   }
-`;let m=(0,r.J1)`
+`,(0,r.J1)`
   query RestaurantByIdAndSlug($id: String, $slug: String) {
     restaurant(id: $id, slug: $slug) {
       _id
@@ -557,7 +557,7 @@
       }
     }
   }
-`,g=(0,r.J1)`
+`;let m=(0,r.J1)`
   query GetReviewsByRestaurant($restaurant: String!) {
     reviewsByRestaurant(restaurant: $restaurant) {
       reviews {
@@ -585,7 +585,7 @@
       total
     }
   }
-`,y=(0,r.J1)`
+`,g=(0,r.J1)`
   query FetchCategoryDetailsByStoreId($storeId: String!) {
     fetchCategoryDetailsByStoreId(storeId: $storeId) {
       id
@@ -600,14 +600,14 @@
       }
     }
   }
-`,$=(0,r.J1)`
+`,y=(0,r.J1)`
   query PopularItems($restaurantId: String!) {
     popularItems(restaurantId: $restaurantId) {
       id
       count
     }
   }
-`,A=(0,r.J1)`
+`,$=(0,r.J1)`
   query subCategories {
     subCategories {
       _id
@@ -615,14 +615,14 @@
       parentCategoryId
     }
   }
-`,I=(0,r.J1)`
+`,A=(0,r.J1)`
   ${u}
   query TopRatedVendors($latitude: Float!, $longitude: Float!) {
     topRatedVendorsPreview(latitude: $latitude, longitude: $longitude) {
       ...RestaurantCarouselPreviewFields
     }
   }
-`;var v=i(4532);let S=(0,r.J1)`
+`;var I=i(4532);let v=(0,r.J1)`
         query{
           profile{
             _id
@@ -644,7 +644,7 @@
             }
             favourite
           }
-        }`,f=(0,r.J1)`
+        }`,S=(0,r.J1)`
   query UserFavourite($latitude: Float, $longitude: Float) {
     userFavourite(latitude: $latitude, longitude: $longitude) {
       _id
@@ -724,7 +724,7 @@
       }
     }
   }
-`,T=(0,r.J1)`
+`,f=(0,r.J1)`
   query Zones {
     zones {
       _id
@@ -1933,7 +1933,7 @@
       }
     }
   }
-`},18761:(e,t,i)=>{i.d(t,{C3:()=>r.C3,CY:()=>r.CY,Cf:()=>r.Cf,Dw:()=>r.Dw,E4:()=>r.E4,Ec:()=>r.Ec,HC:()=>a.HC,Kk:()=>r.Kk,Nj:()=>a.Nj,OJ:()=>a.OJ,Ou:()=>r.Ou,P2:()=>a.P2,Qw:()=>a.Qw,S3:()=>r.S3,Y8:()=>r.Y8,ZZ:()=>a.ZZ,Ze:()=>r.Ze,Zh:()=>r.Zh,Zt:()=>r.Zt,bg:()=>a.bg,eq:()=>r.eq,gf:()=>a.gf,hO:()=>r.hO,ox:()=>r.ox,p6:()=>a.p6,pc:()=>a.pc,rw:()=>a.rw,s_:()=>r.s_,se:()=>r.se,vh:()=>a.vh,xz:()=>a.xz,zY:()=>r.zY});var r=i(35036),a=i(15383)},25095:(e,t,i)=>{i.d(t,{DS:()=>g,Xb:()=>p,Yq:()=>m,ko:()=>u,m9:()=>function e(t=(0,r.FD)()){let i=s();if(!i)return null;let o=i.getItem(l(a,t));return o||(u(t),e(t))},oV:()=>c});var r=i(89561);let a="_px3k9",o="_zt7m2",d="_qw4v8",n="_rf8n1";function s(){return window.localStorage}let l=(e,t)=>(0,r.cX)(e,t);function u(e=(0,r.FD)()){let t=s();if(t&&!t.getItem(l(a,e))){let i,r=(i=new Uint8Array(16),crypto.getRandomValues(i),Array.from(i,e=>e.toString(16).padStart(2,"0")).join(""));t.setItem(l(a,e),r)}}function c(e,t,i=(0,r.FD)()){let a=s();a&&(a.setItem(l(o,i),e),a.setItem(l(d,i),t),a.setItem(l(n,i),Date.now().toString()))}function p(e=(0,r.FD)()){return s()?.getItem(l(o,e))??null}function m(e=(0,r.FD)()){let t=s();if(!t)return!1;let i=t.getItem(l(o,e)),a=t.getItem(l(d,e)),u=t.getItem(l(n,e));if(!i||!a)return!0;let c=new Date(a).getTime(),p=Date.now();return!!(p>=c)||!!(p>=c-1e4)&&(!u||p-parseInt(u,10)>=5e3)}function g(e=(0,r.FD)()){let t=s();t&&(t.removeItem(l(a,e)),t.removeItem(l(o,e)),t.removeItem(l(d,e)),t.removeItem(l(n,e)))}},30561:(e,t,i)=>{i.d(t,{K:()=>d,L:()=>n});var r=i(16261),a=i(87358);let o=(e="")=>e.endsWith("/graphql")?e:`${e.replace(/\/$/,"")}/graphql`,d=()=>(0,r.Iu)()===r.Pg.SINGLE||!0,n=e=>{let t=e===r.Pg.SINGLE,i=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_SERVER_URL:a.env.NEXT_PUBLIC_SERVER_URL,d=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_WS_SERVER_URL:a.env.NEXT_PUBLIC_WS_SERVER_URL,n=t&&a.env.NEXT_PUBLIC_SINGLE_VENDOR_REST_URL||i;return{mode:e,graphqlUrl:o(i),websocketUrl:o(d),restUrl:((e="")=>e?`${e.replace(/\/$/,"")}/`:"")(n),publicAccessRequired:!0}}},35036:(e,t,i)=>{i.d(t,{cK:()=>h,Y8:()=>o,Ze:()=>$,Zt:()=>I,fJ:()=>n,C3:()=>d,ox:()=>l,s_:()=>m,S3:()=>s,Kk:()=>u,Dw:()=>_,Ou:()=>g,Zh:()=>y,Cf:()=>a,CY:()=>c,eq:()=>p,se:()=>A,zY:()=>S,Ec:()=>v,E4:()=>f,hO:()=>T});var r=i(16763);let a=(0,r.J1)`
+`},18761:(e,t,i)=>{i.d(t,{C3:()=>r.C3,CY:()=>r.CY,Cf:()=>r.Cf,Dw:()=>r.Dw,E4:()=>r.E4,Ec:()=>r.Ec,HC:()=>a.HC,Kk:()=>r.Kk,Nj:()=>a.Nj,OJ:()=>a.OJ,Ou:()=>r.Ou,P2:()=>a.P2,Qw:()=>a.Qw,S3:()=>r.S3,Y8:()=>r.Y8,ZZ:()=>a.ZZ,Ze:()=>r.Ze,Zh:()=>r.Zh,Zt:()=>r.Zt,bg:()=>a.bg,eq:()=>r.eq,gf:()=>a.gf,hO:()=>r.hO,ox:()=>r.ox,p6:()=>a.p6,pc:()=>a.pc,rw:()=>a.rw,s_:()=>r.s_,se:()=>r.se,vh:()=>a.vh,zY:()=>r.zY});var r=i(35036),a=i(15383)},25095:(e,t,i)=>{i.d(t,{DS:()=>g,Xb:()=>p,Yq:()=>m,ko:()=>u,m9:()=>function e(t=(0,r.FD)()){let i=s();if(!i)return null;let o=i.getItem(l(a,t));return o||(u(t),e(t))},oV:()=>c});var r=i(89561);let a="_px3k9",o="_zt7m2",d="_qw4v8",n="_rf8n1";function s(){return window.localStorage}let l=(e,t)=>(0,r.cX)(e,t);function u(e=(0,r.FD)()){let t=s();if(t&&!t.getItem(l(a,e))){let i,r=(i=new Uint8Array(16),crypto.getRandomValues(i),Array.from(i,e=>e.toString(16).padStart(2,"0")).join(""));t.setItem(l(a,e),r)}}function c(e,t,i=(0,r.FD)()){let a=s();a&&(a.setItem(l(o,i),e),a.setItem(l(d,i),t),a.setItem(l(n,i),Date.now().toString()))}function p(e=(0,r.FD)()){return s()?.getItem(l(o,e))??null}function m(e=(0,r.FD)()){let t=s();if(!t)return!1;let i=t.getItem(l(o,e)),a=t.getItem(l(d,e)),u=t.getItem(l(n,e));if(!i||!a)return!0;let c=new Date(a).getTime(),p=Date.now();return!!(p>=c)||!!(p>=c-1e4)&&(!u||p-parseInt(u,10)>=5e3)}function g(e=(0,r.FD)()){let t=s();t&&(t.removeItem(l(a,e)),t.removeItem(l(o,e)),t.removeItem(l(d,e)),t.removeItem(l(n,e)))}},30561:(e,t,i)=>{i.d(t,{K:()=>d,L:()=>n});var r=i(16261),a=i(87358);let o=(e="")=>e.endsWith("/graphql")?e:`${e.replace(/\/$/,"")}/graphql`,d=()=>(0,r.Iu)()===r.Pg.SINGLE||!0,n=e=>{let t=e===r.Pg.SINGLE,i=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_SERVER_URL:a.env.NEXT_PUBLIC_SERVER_URL,d=t?a.env.NEXT_PUBLIC_SINGLE_VENDOR_WS_SERVER_URL:a.env.NEXT_PUBLIC_WS_SERVER_URL,n=t&&a.env.NEXT_PUBLIC_SINGLE_VENDOR_REST_URL||i;return{mode:e,graphqlUrl:o(i),websocketUrl:o(d),restUrl:((e="")=>e?`${e.replace(/\/$/,"")}/`:"")(n),publicAccessRequired:!0}}},35036:(e,t,i)=>{i.d(t,{cK:()=>h,Y8:()=>o,Ze:()=>$,Zt:()=>I,fJ:()=>n,C3:()=>d,ox:()=>l,s_:()=>m,S3:()=>s,Kk:()=>u,Dw:()=>_,Ou:()=>g,Zh:()=>y,Cf:()=>a,CY:()=>c,eq:()=>p,se:()=>A,zY:()=>S,Ec:()=>v,E4:()=>f,hO:()=>T});var r=i(16763);let a=(0,r.J1)`
   mutation SelectAddress($id: String!) {
     selectAddress(id: $id) {
       _id

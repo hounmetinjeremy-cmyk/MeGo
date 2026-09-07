@@ -72,7 +72,20 @@ export default function StoreDetailsScreen() {
   const { cart, transformCartWithFoodInfo, updateCart, profile } = useUser();
 
   // Params
-  const { id, slug }: { id: string; slug: string } = useParams();
+  // This page is statically exported with a single "placeholder/placeholder"
+  // shell (mego stores have unbounded, unpredictable ids — see
+  // worker/index.ts's /shop/store/* fallback route), so useParams() always
+  // reports that placeholder. The real slug/id are still in the browser's
+  // actual URL, so read them from there once mounted.
+  const staticParams: { id: string; slug: string } = useParams();
+  const [{ id, slug }, setRouteParams] = useState(staticParams);
+  useEffect(() => {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const storeIndex = segments.lastIndexOf("store");
+    if (storeIndex !== -1 && segments.length >= storeIndex + 3) {
+      setRouteParams({ slug: segments[storeIndex + 1], id: segments[storeIndex + 2] });
+    }
+  }, []);
 
   // State
   const [showDialog, setShowDialog] = useState<IFood | null>(null);

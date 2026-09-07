@@ -60,7 +60,20 @@ export default function RestaurantDetailsScreen() {
   } = useUser();
 
   // Params from route
-  const { id, slug }: { id: string; slug: string } = useParams();
+  // Statically exported with a single "placeholder/placeholder" shell
+  // (mego store ids are unbounded — see worker/index.ts's
+  // /shop/restaurant/* fallback route), so useParams() always reports that
+  // placeholder. Read the real slug/id from the browser's actual URL once
+  // mounted.
+  const staticParams: { id: string; slug: string } = useParams();
+  const [{ id, slug }, setRouteParams] = useState(staticParams);
+  useEffect(() => {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const restaurantIndex = segments.lastIndexOf("restaurant");
+    if (restaurantIndex !== -1 && segments.length >= restaurantIndex + 3) {
+      setRouteParams({ slug: segments[restaurantIndex + 1], id: segments[restaurantIndex + 2] });
+    }
+  }, []);
 
   // Refs
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
