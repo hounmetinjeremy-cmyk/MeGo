@@ -110,10 +110,11 @@ Les anciens parcours (formulaire e-mail/mot de passe par section, création par 
 2. **Création par un administrateur** — page `/admin/accounts` du site vendeur.
 
 - Backend : `POST /api/auth/register` (e-mail/mot de passe), `POST /api/auth/google` (Google), `POST /api/stores` (devenir vendeur), `POST /api/rider-profile/activate|deactivate` (mode livreur), `GET /api/auth/me` (renvoie `storeId`/`isRiderActive`), `GET /api/public/stats` (compteurs publics pour la vitrine).
-- **Connexion Google — il manque un vrai identifiant OAuth pour que ça fonctionne réellement.** Le code est prêt des deux côtés mais affiche un message clair ("pas encore configurée") tant que ça manque :
-  - Backend : variable `GOOGLE_CLIENT_IDS` sur le Worker (liste d'identifiants clients autorisés, séparés par des virgules — un par plateforme si besoin).
-  - Web : `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (identifiant client **Web** du même projet Google Cloud).
-  - Il faut créer un projet OAuth sur [Google Cloud Console](https://console.cloud.google.com/apis/credentials), ajouter l'URL de production comme origine autorisée, et me redonner l'identifiant client Web — je le câble ensuite des deux côtés.
+- **Connexion Google : identifiant client Web configuré et câblé.**
+  - Backend : `GOOGLE_CLIENT_IDS` dans `wrangler.jsonc` (`vars`) — pas un secret, l'identifiant client Google est public par nature, donc c'est commité comme les bindings D1/R2.
+  - Web : `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` dans `.env` (à la racine — également non secret, commité). Expo ne charge automatiquement que `.env`/`.env.local` pendant `expo export` (pas `.env.production`), c'est pourquoi la valeur vit directement dans `.env`.
+  - Un vrai test de connexion Google de bout en bout n'a pas pu être fait depuis cet environnement (accès réseau vers `accounts.google.com` bloqué dans ce bac à sable) — vérifié en revanche que le bouton Google réel s'affiche (le message "pas encore configurée" a disparu) et que le backend reconnaît l'identifiant (`/api/auth/google` répond maintenant "Invalid Google token" sur un faux jeton, plus "not configured"). À confirmer avec un vrai clic une fois en production.
+  - Connexion Google native (iOS/Android) : toujours pas possible, ça demande un vrai build natif (bloqué par les `REPLACE_ME` de `app.json`, voir plus bas) — le bouton mobile affiche un message d'attente et renvoie vers le web.
   - Connexion Google native (iOS/Android) : pas encore possible, ça demande un vrai build natif (bloqué par les `REPLACE_ME` de `app.json`, voir plus bas) — le bouton mobile affiche un message d'attente et renvoie vers le web.
 
 ### Zones de livraison (carte + filtrage)

@@ -20,5 +20,12 @@
       "binding": "UPLOADS",
       "bucket_name": "mego-uploads"
     }
-  ]
+  ],
+  // Google OAuth client id(s) allowed to sign in (comma-separated if more
+  // than one, e.g. adding iOS/Android client ids later). Not a secret —
+  // Google client ids are meant to be public — so it's fine to commit here
+  // alongside the D1/R2 bindings.
+  "vars": {
+    "GOOGLE_CLIENT_IDS": "545417768480-4l1rmpk3iq7jcsga2bi8jk0o6d1uqq6p.apps.googleusercontent.com"
+  }
 }

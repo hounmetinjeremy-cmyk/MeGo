@@ -33,9 +33,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — .env itself is intentionally NOT ignored: Expo's CLI
+# (`expo export`, unlike EAS Build) only auto-loads plain `.env`/`.env.local`,
+# not `.env.production`, so committed public EXPO_PUBLIC_* values (never
+# secrets — those go in .dev.vars or Cloudflare Worker secrets) live there.
 .env*.local
-.env
 .dev.vars
 .wrangler/
 # typescript
