@@ -13,7 +13,8 @@
     "check:single-vendor-schema": "node scripts/check-single-vendor-schema.js",
     "check:single-vendor-auth": "node scripts/check-single-vendor-store-auth.js",
     "build:admin-web": "cd admin-web && npm install && npm run build && rm -rf ../public/admin && cp -r out ../public/admin",
-    "build:web": "npm run build:admin-web && expo export -p web",
+    "build:client-web": "cd client-web && npm install && npm run build && rm -rf ../public/shop && cp -r out ../public/shop",
+    "build:web": "npm run build:admin-web && npm run build:client-web && expo export -p web",
     "postinstall": "patch-package"
   },
   "jest": {

@@ -1,11 +1,11 @@
-import { getUserLocale } from "@/lib/utils/methods/";
 import { getRequestConfig } from "next-intl/server";
 
-export default getRequestConfig(async () => {
-  const locale = await getUserLocale();
+// Static export (Cloudflare Workers static assets, no Node server) can't
+// read a per-request locale cookie — mego serves one fixed locale (French)
+// for this site instead of per-user language switching.
+const STATIC_LOCALE = "fr";
 
-  return {
-    locale,
-    messages: (await import(`../locales/${locale}.json`)).default,
-  };
-});
+export default getRequestConfig(async () => ({
+  locale: STATIC_LOCALE,
+  messages: (await import(`../locales/${STATIC_LOCALE}.json`)).default,
+}));

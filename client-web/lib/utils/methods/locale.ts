@@ -1,16 +1,13 @@
-'use server';
-
-import { cookies } from 'next/headers';
 import { TLocale } from '../types/locale';
 import { DEFAULT_LOCALE } from '../constants';
 
-
-const COOKIE_NAME = 'NEXT_LOCALE';
-
+// Static export (Cloudflare Workers static assets, no Node server) can't run
+// Server Actions or read cookies per-request — mego serves one fixed locale
+// (see i18n/request.ts) instead of per-user language switching.
 export async function getUserLocale() {
-  return (await cookies()).get(COOKIE_NAME)?.value || DEFAULT_LOCALE;
+  return DEFAULT_LOCALE;
 }
 
-export async function setUserLocale(locale: TLocale) {
-  (await cookies()).set(COOKIE_NAME, locale);
+export async function setUserLocale(_locale: TLocale) {
+  // No-op: language switching isn't available in this static deployment.
 }

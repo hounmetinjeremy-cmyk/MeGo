@@ -44,7 +44,11 @@ export const ConfigurationProvider = ({
     ? singleVendorConfigurationQuery.data?.configuration || sharedConfiguration
     : sharedConfiguration;
 
-  const configuredGoogleClientId = sharedConfiguration.webClientID;
+  // mego has no GraphQL config server to fetch webClientID from — the
+  // Google client id is a build-time public env var instead (same one used
+  // by the mobile app's .env), and MULTI/SINGLE vendor mode share it.
+  const configuredGoogleClientId =
+    process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? sharedConfiguration.webClientID;
   const GOOGLE_CLIENT_ID = GOOGLE_WEB_CLIENT_ID_REGEX.test(
     configuredGoogleClientId ?? "",
   )
@@ -59,10 +63,12 @@ export const ConfigurationProvider = ({
     GOOGLE: sharedConfiguration.googleColor as string,
   };
   const SENTRY_DSN = sharedConfiguration.webSentryUrl;
-  const SKIP_EMAIL_VERIFICATION = commerceConfiguration.skipEmailVerification;
-  const SKIP_MOBILE_VERIFICATION = commerceConfiguration.skipMobileVerification;
-  const CURRENCY = commerceConfiguration.currency;
-  const CURRENCY_SYMBOL = commerceConfiguration.currencySymbol;
+  // mego accounts have no email/phone OTP step (see worker/index.ts) — always
+  // skip it here rather than depending on Enatega's remote configuration.
+  const SKIP_EMAIL_VERIFICATION = true;
+  const SKIP_MOBILE_VERIFICATION = true;
+  const CURRENCY = commerceConfiguration.currency || "XOF";
+  const CURRENCY_SYMBOL = commerceConfiguration.currencySymbol || "FCFA";
   const DELIVERY_RATE = commerceConfiguration.deliveryRate;
   const COST_TYPE = commerceConfiguration.costType;
   const TEST_OTP = sharedConfiguration.testOtp;

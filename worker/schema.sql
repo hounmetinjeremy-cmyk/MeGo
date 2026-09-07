@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS stores (
   address TEXT,
   lat REAL,
   lng REAL,
+  image_url TEXT,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

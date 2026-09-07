@@ -44,6 +44,12 @@ const contentSecurityPolicy = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Deployed as static files served by the mego Cloudflare Worker (same
+  // pattern as admin-web/) — no Node server, so no next/image optimization
+  // server, no Middleware, no Server Actions at request time.
+  output: "export",
+  basePath: "/shop",
+  trailingSlash: true,
   webpack: (config) => {
     config.module.rules.push({
       test: /\.(woff|woff2|eot|ttf|otf)$/i,
@@ -84,6 +90,7 @@ const nextConfig = {
   },
 
   images: {
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 86400,
     dangerouslyAllowSVG: false,

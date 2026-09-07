@@ -267,6 +267,40 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         });
         return;
       }
+
+      // Single unified login: mego has its own REST auth (worker/index.ts
+      // POST /api/auth/google), not Enatega's GraphQL LOGIN mutation — verify
+      // the Google id token server-side there instead, for every account
+      // (customer/vendor/rider all share this same login).
+      if (user.type === "google") {
+        const response = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ idToken: user.idToken }),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+          throw new Error(body?.error || "Google sign-in failed");
+        }
+        const data: ILoginProfileResponse = {
+          login: {
+            userId: body.user.id,
+            token: body.token,
+            name: body.user.name,
+            email: body.user.email,
+            emailIsVerified: true,
+            phoneIsVerified: true,
+          },
+        };
+        setAuthTokens({
+          userId: data.login.userId,
+          token: data.login.token,
+          userType: "USER",
+        });
+        setAuthToken(data.login.token ?? "");
+        return data;
+      }
+
       const userResponse = await mutateLogin({
         variables: { ...user },
       });

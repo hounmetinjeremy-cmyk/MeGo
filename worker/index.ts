@@ -44,7 +44,28 @@ export default {
     const url = new URL(request.url);
 
     if (!url.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
+      const assetResponse = await env.ASSETS.fetch(request);
+      // /shop is a Next.js static export (client-web/) with real,
+      // unbounded-cardinality store/restaurant ids that can't be
+      // pre-rendered at build time — each got exactly one exported
+      // "placeholder" page. Cloudflare's own SPA fallback only covers the
+      // site root, so any /shop/store/<real-id>/... or
+      // /shop/restaurant/<real-id>/... path serves that placeholder's HTML
+      // here instead; the page then reads the real id from
+      // window.location on the client.
+      if (assetResponse.status === 404) {
+        const shopDetailMatch = url.pathname.match(
+          /^\/shop\/(store|restaurant)\/[^/]+\/[^/]+\/?$/,
+        );
+        if (shopDetailMatch) {
+          const shellUrl = new URL(
+            `/shop/${shopDetailMatch[1]}/placeholder/placeholder/`,
+            url,
+          );
+          return env.ASSETS.fetch(new Request(shellUrl, request));
+        }
+      }
+      return assetResponse;
     }
 
     try {
