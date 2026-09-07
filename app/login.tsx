@@ -15,6 +15,13 @@ export default function RoleSelectScreen() {
         <Text style={styles.subtitle}>Choisissez votre espace</Text>
 
         <Pressable
+          style={[styles.button, styles.clientButton]}
+          onPress={() => router.push("/client")}
+        >
+          <Text style={styles.buttonText}>Je suis Client</Text>
+        </Pressable>
+
+        <Pressable
           style={[styles.button, styles.riderButton]}
           onPress={() => router.push("/rider/login")}
         >
@@ -65,6 +72,9 @@ const styles = StyleSheet.create({
   },
   storeButton: {
     backgroundColor: "#16A34A",
+  },
+  clientButton: {
+    backgroundColor: "#7C3AED",
   },
   buttonText: {
     color: "#FFFFFF",

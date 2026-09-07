@@ -68,7 +68,7 @@ function base64UrlDecode(data: string): string {
 
 export interface JwtPayload {
   sub: string; // user id
-  role: "rider" | "store" | "admin";
+  role: "rider" | "store" | "admin" | "customer";
   exp: number;
 }
 

@@ -10,7 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  */
 export const ACTIVE_ROLE_KEY = "@enatega/active-app-role";
 
-export type AppRole = "rider" | "store";
+export type AppRole = "rider" | "store" | "client";
 
 export async function setActiveRole(role: AppRole): Promise<void> {
   await AsyncStorage.setItem(ACTIVE_ROLE_KEY, role);
@@ -18,7 +18,7 @@ export async function setActiveRole(role: AppRole): Promise<void> {
 
 export async function getActiveRole(): Promise<AppRole | null> {
   const value = await AsyncStorage.getItem(ACTIVE_ROLE_KEY);
-  return value === "rider" || value === "store" ? value : null;
+  return value === "rider" || value === "store" || value === "client" ? value : null;
 }
 
 export async function clearActiveRole(): Promise<void> {

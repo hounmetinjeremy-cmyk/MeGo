@@ -63,20 +63,28 @@ export interface MeGoUser {
   id: string;
   email: string;
   name: string;
-  role: "rider" | "store" | "admin";
+  role: "rider" | "store" | "admin" | "customer";
 }
 
 export function register(input: {
   email: string;
   password: string;
   name: string;
-  role: "rider" | "store";
+  role: "rider" | "store" | "customer";
   phone?: string;
   storeName?: string;
 }) {
   return request<{ token: string; user: MeGoUser }>("/api/auth/register", {
     method: "POST",
     body: input,
+    auth: false,
+  });
+}
+
+export function emailExists(email: string) {
+  return request<{ exists: boolean }>("/api/auth/email-exists", {
+    method: "POST",
+    body: { email },
     auth: false,
   });
 }
@@ -143,6 +151,35 @@ export function deleteProduct(id: string) {
   });
 }
 
+/**
+ * The Worker's /api/store/upload reads a raw binary body (see
+ * worker/index.ts handleUpload), not multipart form data, so this bypasses
+ * the JSON-only request() helper above.
+ */
+export async function uploadStoreImage(
+  uri: string,
+  filename: string,
+  contentType: string,
+): Promise<{ url: string }> {
+  const token = await getApiToken();
+  const fileResponse = await fetch(uri);
+  const blob = await fileResponse.blob();
+  const response = await fetch(`${API_BASE_URL}/api/store/upload`, {
+    method: "POST",
+    headers: {
+      "content-type": contentType,
+      "x-filename": filename,
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: blob,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new ApiError(data?.error ?? "Upload failed", response.status);
+  }
+  return data;
+}
+
 // ---- Orders ----
 export interface MeGoOrder {
   id: string;
@@ -162,6 +199,8 @@ export interface MeGoOrder {
     | "DELIVERED"
     | "CANCELLED";
   total_cents: number;
+  payment_method: "COD" | "FEDAPAY";
+  payment_status: "PENDING" | "APPROVED" | "DECLINED" | "CANCELED";
   created_at: string;
   updated_at: string;
 }
@@ -209,4 +248,69 @@ export function reportRiderLocation(lat: number, lng: number) {
     method: "POST",
     body: { lat, lng },
   });
+}
+
+export function getOrderRiderLocation(orderId: string) {
+  return request<{ location: { lat: number; lng: number; updated_at: string } }>(
+    `/api/orders/${orderId}/location`,
+    { auth: false },
+  );
+}
+
+// ---- Customer app: browse, order, track ----
+export interface MeGoStore {
+  id: string;
+  name: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
+export function listStores() {
+  return request<{ stores: MeGoStore[] }>("/api/stores", { auth: false });
+}
+
+export function listStoreProducts(storeId: string) {
+  return request<{ products: MeGoProduct[] }>(`/api/stores/${storeId}/products`, {
+    auth: false,
+  });
+}
+
+export interface MeGoOrderItem {
+  id: string;
+  quantity: number;
+  price_cents: number;
+  product_name: string;
+}
+
+export function placeOrder(input: {
+  store_id: string;
+  customer_name: string;
+  customer_phone?: string;
+  delivery_address: string;
+  delivery_lat?: number;
+  delivery_lng?: number;
+  items: { product_id: string; quantity: number }[];
+  payment_method: "COD" | "FEDAPAY";
+}) {
+  return request<{
+    id: string;
+    total_cents: number;
+    payment_method: "COD" | "FEDAPAY";
+    payment_url?: string | null;
+    payment_error?: string;
+  }>("/api/orders", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function getOrder(orderId: string) {
+  return request<{ order: MeGoOrder; items: MeGoOrderItem[] }>(`/api/orders/${orderId}`, {
+    auth: false,
+  });
+}
+
+export function listMyCustomerOrders() {
+  return request<{ orders: MeGoOrder[] }>("/api/customer/orders");
 }

@@ -17,6 +17,8 @@ export default function Index() {
         router.replace("/rider");
       } else if (role === "store") {
         router.replace("/store");
+      } else if (role === "client") {
+        router.replace("/client");
       } else {
         router.replace("/login");
       }

@@ -70,7 +70,7 @@ Sert l'app ET l'API sur `http://localhost:8787` (ou le port choisi), en local, s
 
 ## Ce qui n'est PAS encore branché sur le backend MeGo
 
-Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue, upload de photo produit (l'API existe côté Worker, pas encore reliée à l'écran d'ajout de produit).
+Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue.
 
 **App client (commande)** : le backend est prêt (parcourir les boutiques/le menu, passer commande en COD ou FedaPay, suivre une commande), mais les écrans client (`app/client/...` : liste des boutiques → menu → panier → paiement → suivi) restent à construire, sur le modèle du parcours Enatega (Main → Restaurant → Cart → Checkout → OrderDetail).
 

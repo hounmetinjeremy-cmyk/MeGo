@@ -64,7 +64,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       email: string;
       password: string;
       name: string;
-      role: "rider" | "store";
+      role: "rider" | "store" | "customer";
       phone?: string;
       storeName?: string;
     }>();
@@ -99,6 +99,15 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ token, user: { id: userId, email: body.email, name: body.name, role: body.role } }, 201);
   }
 
+  if (pathname === "/api/auth/email-exists" && method === "POST") {
+    const body = await request.json<{ email: string }>();
+    if (!body.email) return error("email is required");
+    const existing = await env.DB.prepare("SELECT id FROM users WHERE email = ?")
+      .bind(body.email.toLowerCase())
+      .first();
+    return json({ exists: !!existing });
+  }
+
   if (pathname === "/api/auth/login" && method === "POST") {
     const body = await request.json<{ email: string; password: string }>();
     if (!body.email || !body.password) return error("email and password are required");
@@ -107,7 +116,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       "SELECT id, email, password_hash, role, name FROM users WHERE email = ?",
     )
       .bind(body.email.toLowerCase())
-      .first<{ id: string; email: string; password_hash: string; role: "rider" | "store" | "admin"; name: string }>();
+      .first<{ id: string; email: string; password_hash: string; role: "rider" | "store" | "admin" | "customer"; name: string }>();
 
     if (!user || !(await verifyPassword(body.password, user.password_hash))) {
       return error("Invalid email or password", 401);
@@ -225,8 +234,11 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ products: results });
   }
 
-  // ---- Orders: create (customer app) ----
+  // ---- Orders: create (customer app, requires a customer account) ----
   if (pathname === "/api/orders" && method === "POST") {
+    const auth = await requireRole(request, env, "customer");
+    if (auth instanceof Response) return auth;
+
     const body = await request.json<{
       store_id: string;
       customer_name: string;
@@ -256,11 +268,12 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
 
     const orderId = newId();
     await env.DB.prepare(
-      "INSERT INTO orders (id, store_id, customer_name, customer_phone, delivery_address, delivery_lat, delivery_lng, total_cents, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO orders (id, store_id, customer_id, customer_name, customer_phone, delivery_address, delivery_lat, delivery_lng, total_cents, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
       .bind(
         orderId,
         body.store_id,
+        auth.sub,
         body.customer_name,
         body.customer_phone ?? null,
         body.delivery_address,
@@ -301,6 +314,18 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
         201,
       );
     }
+  }
+
+  // ---- Customer: order history ----
+  if (pathname === "/api/customer/orders" && method === "GET") {
+    const auth = await requireRole(request, env, "customer");
+    if (auth instanceof Response) return auth;
+    const { results } = await env.DB.prepare(
+      "SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC",
+    )
+      .bind(auth.sub)
+      .all();
+    return json({ orders: results });
   }
 
   // ---- Orders: detail (public, customer tracking) ----
@@ -512,7 +537,7 @@ async function handleUpload(request: Request, env: Env, prefix: string): Promise
 async function requireRole(
   request: Request,
   env: Env,
-  role: "rider" | "store",
+  role: "rider" | "store" | "customer",
 ): Promise<JwtPayload | Response> {
   const auth = await getAuthUser(request, env);
   if (!auth) return error("Unauthorized", 401);

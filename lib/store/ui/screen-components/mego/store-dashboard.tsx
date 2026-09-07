@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 import {
   createProduct,
@@ -16,6 +18,7 @@ import {
   listMyProducts,
   listStoreOrders,
   updateStoreOrderStatus,
+  uploadStoreImage,
   type MeGoOrder,
   type MeGoProduct,
 } from "@/lib/shared/api-client";
@@ -53,6 +56,8 @@ export default function StoreDashboard() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -81,6 +86,28 @@ export default function StoreDashboard() {
     void load();
   };
 
+  const onPickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setUploadingImage(true);
+    setError(null);
+    try {
+      const filename = asset.fileName ?? `product-${Date.now()}.jpg`;
+      const { url } = await uploadStoreImage(asset.uri, filename, asset.mimeType ?? "image/jpeg");
+      setImageUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'envoi de la photo");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const onAddProduct = async () => {
     const priceCents = Math.round(parseFloat(price.replace(",", ".")) * 100);
     if (!name.trim() || !priceCents || Number.isNaN(priceCents)) return;
@@ -90,10 +117,12 @@ export default function StoreDashboard() {
         name: name.trim(),
         description: description.trim() || undefined,
         price_cents: priceCents,
+        image_url: imageUrl ?? undefined,
       });
       setName("");
       setDescription("");
       setPrice("");
+      setImageUrl(null);
       setShowAddProduct(false);
       await load();
     } catch (err) {
@@ -183,6 +212,19 @@ export default function StoreDashboard() {
             onChangeText={setPrice}
           />
           <TouchableOpacity
+            style={styles.imagePickerButton}
+            onPress={onPickImage}
+            disabled={uploadingImage}
+          >
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.imagePreview} />
+            ) : (
+              <Text style={styles.imagePickerText}>
+                {uploadingImage ? "Envoi de la photo…" : "📷 Ajouter une photo"}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.button, saving && styles.buttonDisabled]}
             onPress={onAddProduct}
             disabled={saving}
@@ -197,6 +239,9 @@ export default function StoreDashboard() {
       ) : (
         products.map((product) => (
           <View key={product.id} style={styles.card}>
+            {product.image_url ? (
+              <Image source={{ uri: product.image_url }} style={styles.cardImage} />
+            ) : null}
             <View style={styles.cardBody}>
               <Text style={styles.cardTitle}>{product.name}</Text>
               {product.description ? (
@@ -289,7 +334,20 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: "#FFFFFF", fontWeight: "600" },
+  imagePickerButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    overflow: "hidden",
+  },
+  imagePickerText: { color: "#94A3B8", fontWeight: "600" },
+  imagePreview: { width: "100%", height: 120, borderRadius: 8 },
   emptyText: { color: "#64748B", paddingHorizontal: 16, paddingVertical: 8 },
+  cardImage: { width: 56, height: 56, borderRadius: 8, marginRight: 12 },
   card: {
     marginHorizontal: 16,
     marginBottom: 10,
