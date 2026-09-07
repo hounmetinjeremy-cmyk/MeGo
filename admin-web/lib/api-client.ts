@@ -225,3 +225,37 @@ export async function uploadStoreImage(file: File): Promise<{ url: string }> {
   }
   return data;
 }
+
+// ---- Admin: delivery zones ----
+export interface MeGoZone {
+  id: string;
+  title: string;
+  description: string | null;
+  coordinates: [number, number][];
+  created_at: string;
+}
+
+export function listZones() {
+  return request<{ zones: MeGoZone[] }>("/api/admin/zones");
+}
+
+export function createZone(input: { title: string; description?: string; coordinates: [number, number][] }) {
+  return request<{ id: string }>("/api/admin/zones", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function updateZone(
+  id: string,
+  input: Partial<{ title: string; description: string; coordinates: [number, number][] }>,
+) {
+  return request<{ ok: true }>(`/api/admin/zones/${id}`, {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export function deleteZone(id: string) {
+  return request<{ ok: true }>(`/api/admin/zones/${id}`, { method: "DELETE" });
+}

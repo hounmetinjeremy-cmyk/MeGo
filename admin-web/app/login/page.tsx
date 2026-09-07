@@ -34,12 +34,12 @@ export default function LoginPage() {
     setError(null);
     try {
       const { token, user } = await login(values.email.trim().toLowerCase(), values.password);
-      if (user.role !== "store") {
-        setError("Ce compte n'est pas un compte vendeur.");
+      if (user.role !== "store" && user.role !== "admin") {
+        setError("Ce compte n'est pas un compte vendeur ou admin.");
         return;
       }
       setApiToken(token);
-      router.replace("/products");
+      router.replace(user.role === "admin" ? "/zones" : "/products");
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 401

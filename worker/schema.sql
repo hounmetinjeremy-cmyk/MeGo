@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS rider_locations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Delivery zones (platform-wide, managed by admin). `coordinates` is a JSON
+-- array of [lat, lng] points forming a closed polygon, e.g.
+-- [[6.36,2.42],[6.37,2.42],[6.37,2.43],[6.36,2.43]].
+CREATE TABLE IF NOT EXISTS zones (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  coordinates TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_categories_store ON categories(store_id);
 CREATE INDEX IF NOT EXISTS idx_subcategories_category ON subcategories(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_store ON products(store_id);

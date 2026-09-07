@@ -344,6 +344,61 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
+  // ---- Admin: delivery zones ----
+  if (pathname === "/api/admin/zones" && method === "GET") {
+    const auth = await requireRole(request, env, "admin");
+    if (auth instanceof Response) return auth;
+    const { results } = await env.DB.prepare("SELECT * FROM zones ORDER BY created_at DESC").all<{
+      coordinates: string;
+    }>();
+    return json({ zones: results.map((zone) => ({ ...zone, coordinates: JSON.parse(zone.coordinates) })) });
+  }
+
+  if (pathname === "/api/admin/zones" && method === "POST") {
+    const auth = await requireRole(request, env, "admin");
+    if (auth instanceof Response) return auth;
+    const body = await request.json<{
+      title: string;
+      description?: string;
+      coordinates: [number, number][];
+    }>();
+    if (!body.title || !Array.isArray(body.coordinates) || body.coordinates.length < 3) {
+      return error("title and at least 3 coordinates are required");
+    }
+    const zoneId = newId();
+    await env.DB.prepare("INSERT INTO zones (id, title, description, coordinates) VALUES (?, ?, ?, ?)")
+      .bind(zoneId, body.title, body.description ?? null, JSON.stringify(body.coordinates))
+      .run();
+    return json({ id: zoneId }, 201);
+  }
+
+  const zoneMatch = pathname.match(/^\/api\/admin\/zones\/([^/]+)$/);
+  if (zoneMatch && (method === "PATCH" || method === "DELETE")) {
+    const auth = await requireRole(request, env, "admin");
+    if (auth instanceof Response) return auth;
+    const zoneId = zoneMatch[1];
+
+    if (method === "DELETE") {
+      await env.DB.prepare("DELETE FROM zones WHERE id = ?").bind(zoneId).run();
+      return json({ ok: true });
+    }
+
+    const body = await request.json<Partial<{ title: string; description: string; coordinates: [number, number][] }>>();
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, value] of Object.entries(body)) {
+      if (value === undefined) continue;
+      fields.push(`${key} = ?`);
+      values.push(key === "coordinates" ? JSON.stringify(value) : value);
+    }
+    if (fields.length === 0) return error("No fields to update");
+    values.push(zoneId);
+    await env.DB.prepare(`UPDATE zones SET ${fields.join(", ")} WHERE id = ?`)
+      .bind(...values)
+      .run();
+    return json({ ok: true });
+  }
+
   // ---- Public: browse (customer app) ----
   if (pathname === "/api/stores" && method === "GET") {
     const { results } = await env.DB.prepare(
@@ -675,7 +730,7 @@ async function handleUpload(request: Request, env: Env, prefix: string): Promise
 async function requireRole(
   request: Request,
   env: Env,
-  role: "rider" | "store" | "customer",
+  role: "rider" | "store" | "customer" | "admin",
 ): Promise<JwtPayload | Response> {
   const auth = await getAuthUser(request, env);
   if (!auth) return error("Unauthorized", 401);

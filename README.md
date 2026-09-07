@@ -36,6 +36,8 @@ Cloudflare Workers + D1 (SQLite) + R2 (fichiers), tout dans le même Worker qui 
 
 - **Auth** : `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — JWT (HS256)
 - **Produits** (vendeur) : `GET/POST /api/store/products`, `PATCH/DELETE /api/store/products/:id`
+- **Catégories** (vendeur) : `GET/POST /api/store/categories`, `PATCH/DELETE /api/store/categories/:id`, `POST /api/store/categories/:id/subcategories`, `DELETE /api/store/subcategories/:id`
+- **Zones de livraison** (admin uniquement) : `GET/POST /api/admin/zones`, `PATCH/DELETE /api/admin/zones/:id` — `coordinates` est un polygone `[lat, lng][]`
 - **App client** (public, sans compte) : `GET /api/stores` (boutiques actives), `GET /api/stores/:id/products` (menu d'une boutique), `GET /api/orders/:id` (suivi d'une commande + ses articles)
 - **Commandes** : `POST /api/orders` (création, `payment_method: "COD" | "FEDAPAY"`), `GET /api/store/orders`, `PATCH /api/store/orders/:id/status`
 - **Paiement (FedaPay)** : `POST /api/orders` avec `payment_method: "FEDAPAY"` crée la transaction FedaPay et renvoie `payment_url` (à ouvrir côté client) ; `POST /api/fedapay/webhook` reçoit la confirmation de FedaPay et met à jour `payment_status` de la commande
@@ -87,7 +89,15 @@ Sert `http://localhost:3000/admin` en local (le `basePath` reste actif en dev) ;
 
 Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue.
 
-**Site vendeur (`admin-web/`)** : gère les produits (titre, description, prix, photo) et les commandes. Le vrai dashboard admin Enatega gère aussi les catégories, sous-catégories, variations, coupons, bannières, zones, etc. — aucun de ces concepts n'existe dans le schéma D1 de MeGo, donc ils ne sont pas repris (pas de fausse fonctionnalité qui ne ferait rien).
+**Site vendeur (`admin-web/`)** : gère les produits (titre, description, prix, photo), les catégories/sous-catégories, les commandes, et (compte `admin`) les zones de livraison. Le vrai dashboard admin Enatega gère aussi les variations de plats, coupons, bannières, plusieurs membres du staff, taux de commission — aucun de ces concepts n'existe encore dans le schéma D1 de MeGo, donc ils ne sont pas repris (pas de fausse fonctionnalité qui ne ferait rien).
+
+### Compte admin
+
+Un compte `admin` (accès à `/admin/zones`) a été créé directement en base — il n'y a pas d'inscription publique pour ce rôle (un compte admin est sensible, mieux vaut ne pas l'exposer à l'inscription libre). Les identifiants t'ont été donnés en message ; si tu les as perdus, redemande-moi de créer un nouveau compte admin ou de réinitialiser le mot de passe.
+
+### Zones de livraison (carte)
+
+Dessinées sur une carte OpenStreetMap (Leaflet + Leaflet.draw), gratuite et sans clé API — contrairement à Enatega qui utilise Google Maps (payant au-delà d'un certain usage). Les zones sont enregistrées (`GET/POST /api/admin/zones`) mais **ne filtrent encore rien** : les boutiques et livreurs restent visibles partout pour l'app client/livreur. Le filtrage par zone (n'afficher que les boutiques dans la zone du client, n'assigner que les livreurs de la zone) est une étape séparée, pas encore faite.
 
 ## À faire avant un build mobile (Android/iOS) de production
 
