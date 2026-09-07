@@ -14,8 +14,11 @@ export function useCurrentUser() {
         setUser(null);
         return;
       }
+      // Any authenticated account browses the same public storefront —
+      // a vendor or rider account is not "logged out" here just because
+      // their base role isn't "customer".
       const { user } = await me();
-      setUser(user.role === "customer" ? user : null);
+      setUser(user);
     } catch {
       setUser(null);
     } finally {

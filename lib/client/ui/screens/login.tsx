@@ -54,11 +54,9 @@ export default function ClientLoginScreen() {
     setLoggingIn(true);
     setError(null);
     try {
-      const { token, user } = await login(emailRef.current.trim().toLowerCase(), password);
-      if (user.role !== "customer") {
-        setError("Ce compte n'est pas un compte client.");
-        return;
-      }
+      // Any account can browse/order here, whatever its base role — a vendor
+      // or rider account is not "not a client account" in the unified model.
+      const { token } = await login(emailRef.current.trim().toLowerCase(), password);
       await setApiToken(token);
       await setActiveRole("client");
       router.replace("/client");

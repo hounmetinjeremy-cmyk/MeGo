@@ -1,5 +1,4 @@
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useRef } from "react";
 import Constants from "expo-constants";
 
@@ -7,13 +6,11 @@ import Constants from "expo-constants";
 import useNotification from "@/lib/store/hooks/useNotification";
 import { ROUTES } from "@/lib/store/utils/constants";
 import SpinnerComponent from "@/lib/store/ui/useable-components/spinner";
-import { getStoreId } from "@/lib/store/services";
-import { useStoreMode } from "@/lib/store/context/global/store-mode.context";
+import { getApiToken } from "@/lib/shared/api-client";
 
 function App() {
   const notificationRef = useRef(true);
   const router = useRouter();
-  const { storeIdKey, tokenKey } = useStoreMode();
   const {
     restaurantData,
     getPermission,
@@ -23,15 +20,17 @@ function App() {
   } = useNotification();
 
   const init = useCallback(async () => {
-    const token = await SecureStore.getItemAsync(tokenKey);
-    const storeId = await getStoreId(storeIdKey);
+    // Shared token (lib/shared/api-client): whether this account can act as
+    // a store is enforced server-side (requireRole), not by a locally-stored
+    // store id.
+    const token = await getApiToken();
 
-    if (token && storeId) {
+    if (token) {
       router.replace(ROUTES.home);
     } else {
       router.replace(ROUTES.login);
     }
-  }, [router, storeIdKey, tokenKey]);
+  }, [router]);
 
   useEffect(() => {
     if (!storeLookupComplete) return;

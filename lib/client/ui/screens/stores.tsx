@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Location from "expo-location";
 
-import { listStores, type MeGoStore } from "@/lib/shared/api-client";
+import { becomeVendor, activateRiderProfile, deactivateRiderProfile, listStores, type MeGoStore } from "@/lib/shared/api-client";
 import { useCurrentUser } from "@/lib/client/hooks/useCurrentUser";
 import { clientStyles as styles } from "@/lib/client/ui/styles";
 import { enatega } from "@/lib/client/ui/theme";
@@ -14,7 +23,8 @@ export default function ClientStoresScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useCurrentUser();
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
+  const { user, refresh: refreshUser, logout } = useCurrentUser();
 
   const load = useCallback(async () => {
     try {
@@ -62,11 +72,16 @@ export default function ClientStoresScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Boutiques</Text>
         {user ? (
-          <TouchableOpacity onPress={() => router.push("/client/orders")}>
-            <Text style={styles.headerLink}>Mes commandes</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 16 }}>
+            <TouchableOpacity onPress={() => router.push("/client/orders")}>
+              <Text style={styles.headerLink}>Mes commandes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setAccountPanelOpen(true)}>
+              <Text style={styles.headerLink}>Mon compte</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <TouchableOpacity onPress={() => router.push("/client/login")}>
+          <TouchableOpacity onPress={() => router.push("/login")}>
             <Text style={styles.headerLink}>Se connecter</Text>
           </TouchableOpacity>
         )}
@@ -102,6 +117,138 @@ export default function ClientStoresScreen() {
         />
       )}
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <Modal
+        visible={accountPanelOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setAccountPanelOpen(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "#0007" }}>
+          <View style={{ backgroundColor: enatega.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, gap: 12 }}>
+            {user ? (
+              <AccountPanel
+                user={user}
+                onClose={() => setAccountPanelOpen(false)}
+                onChanged={refreshUser}
+                onLogout={async () => {
+                  await logout();
+                  setAccountPanelOpen(false);
+                  router.replace("/login");
+                }}
+              />
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function AccountPanel({
+  user,
+  onClose,
+  onChanged,
+  onLogout,
+}: {
+  user: NonNullable<ReturnType<typeof useCurrentUser>["user"]>;
+  onClose: () => void;
+  onChanged: () => void;
+  onLogout: () => void;
+}) {
+  const [storeName, setStoreName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [panelError, setPanelError] = useState<string | null>(null);
+
+  const onCreateStore = async () => {
+    if (!storeName.trim()) {
+      setPanelError("Donne un nom à ta boutique.");
+      return;
+    }
+    try {
+      setBusy(true);
+      setPanelError(null);
+      await becomeVendor({ name: storeName.trim() });
+      onChanged();
+      router.push("/store");
+    } catch {
+      setPanelError("Impossible de créer la boutique, réessaie.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onToggleRider = async () => {
+    try {
+      setBusy(true);
+      setPanelError(null);
+      if (user.isRiderActive) {
+        await deactivateRiderProfile();
+      } else {
+        await activateRiderProfile();
+      }
+      onChanged();
+    } catch {
+      setPanelError("Action impossible, réessaie.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Text style={[styles.title, { textAlign: "left" }]}>{user.name}</Text>
+      <Text style={styles.cardSubtitle}>{user.email}</Text>
+
+      <View style={{ height: 1, backgroundColor: enatega.borderColor, marginVertical: 8 }} />
+
+      <Text style={styles.sectionLabel}>Vendeur</Text>
+      {user.storeId ? (
+        <TouchableOpacity style={styles.button} onPress={() => router.push("/store")}>
+          <Text style={styles.buttonText}>Gérer ma boutique</Text>
+        </TouchableOpacity>
+      ) : (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Nom de ta boutique"
+            value={storeName}
+            onChangeText={setStoreName}
+          />
+          <TouchableOpacity
+            style={[styles.button, busy && styles.buttonDisabled]}
+            disabled={busy}
+            onPress={onCreateStore}
+          >
+            <Text style={styles.buttonText}>Devenir vendeur</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      <Text style={styles.sectionLabel}>Livreur</Text>
+      <TouchableOpacity
+        style={[styles.button, busy && styles.buttonDisabled]}
+        disabled={busy}
+        onPress={onToggleRider}
+      >
+        <Text style={styles.buttonText}>
+          {user.isRiderActive ? "Désactiver le mode livreur" : "Activer le mode livreur"}
+        </Text>
+      </TouchableOpacity>
+      {user.isRiderActive ? (
+        <TouchableOpacity style={styles.button} onPress={() => router.push("/rider")}>
+          <Text style={styles.buttonText}>Ouvrir l&apos;espace livreur</Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {panelError ? <Text style={styles.error}>{panelError}</Text> : null}
+
+      <TouchableOpacity onPress={onLogout} style={{ marginTop: 12 }}>
+        <Text style={styles.link}>Se déconnecter</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onClose}>
+        <Text style={[styles.link, { color: enatega.fontSecondColor }]}>Fermer</Text>
+      </TouchableOpacity>
+    </>
   );
 }

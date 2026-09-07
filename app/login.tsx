@@ -1,84 +1,68 @@
-import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+
+import { googleSignIn, setApiToken, ApiError } from "@/lib/shared/api-client";
+import { setActiveRole } from "@/lib/shared/active-role";
+import { GoogleSignInButton } from "@/lib/shared/google-sign-in-button";
+import { clientStyles as styles } from "@/lib/client/ui/styles";
 
 /**
- * Role picker shown to a device with no remembered session. Each role keeps
- * its own login screen and auth flow (different GraphQL mutation, different
- * hardening) — this screen only routes to the right one.
+ * Single unified entry point: one Google login for everyone. There is no
+ * more "I am a client / rider / vendor" choice here — every account lands
+ * on the same public storefront (app/client), and can become a vendor
+ * (create a store) or activate rider mode from its own account panel there.
+ * Email/password login still exists per-section (app/client/login,
+ * app/rider/login, app/store/login) for accounts created before this, or
+ * for anyone who prefers it.
  */
-export default function RoleSelectScreen() {
+export default function UnifiedLoginScreen() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onGoogleToken = async (idToken: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { token } = await googleSignIn(idToken);
+      await setApiToken(token);
+      await setActiveRole("client");
+      router.replace("/client");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? "Connexion Google indisponible pour le moment."
+          : "Impossible de se connecter, réessaie.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Connexion</Text>
-        <Text style={styles.subtitle}>Choisissez votre espace</Text>
+      <View style={[styles.content, { justifyContent: "center", gap: 20 }]}>
+        <Text style={[styles.title, { fontSize: 28 }]}>MeGo</Text>
+        <Text style={styles.subtitle}>
+          Une seule connexion pour commander, vendre ou livrer.
+        </Text>
 
-        <Pressable
-          style={[styles.button, styles.clientButton]}
-          onPress={() => router.push("/client")}
-        >
-          <Text style={styles.buttonText}>Je suis Client</Text>
-        </Pressable>
+        {loading ? (
+          <ActivityIndicator size="large" style={{ marginTop: 12 }} />
+        ) : (
+          <View style={{ alignItems: "center", marginTop: 12 }}>
+            <GoogleSignInButton onToken={onGoogleToken} />
+          </View>
+        )}
 
-        <Pressable
-          style={[styles.button, styles.riderButton]}
-          onPress={() => router.push("/rider/login")}
-        >
-          <Text style={styles.buttonText}>Je suis Livreur</Text>
-        </Pressable>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable
-          style={[styles.button, styles.storeButton]}
-          onPress={() => router.push("/store/login")}
-        >
-          <Text style={styles.buttonText}>Je suis Vendeur</Text>
-        </Pressable>
+        <Text style={styles.subtitle}>ou</Text>
+        <Text style={styles.link} onPress={() => router.push("/client/login")}>
+          Se connecter avec e-mail
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0F172A",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#94A3B8",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  riderButton: {
-    backgroundColor: "#2563EB",
-  },
-  storeButton: {
-    backgroundColor: "#16A34A",
-  },
-  clientButton: {
-    backgroundColor: "#7C3AED",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
