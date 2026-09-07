@@ -152,6 +152,14 @@ export function deleteSubcategory(id: string) {
 }
 
 // ---- Store: products ----
+export interface MeGoProductVariation {
+  id: string;
+  product_id: string;
+  title: string;
+  price_cents: number;
+  is_out_of_stock: number;
+}
+
 export interface MeGoProduct {
   id: string;
   store_id: string;
@@ -163,10 +171,22 @@ export interface MeGoProduct {
   image_url: string | null;
   is_available: number;
   created_at: string;
+  variations: MeGoProductVariation[];
 }
 
 export function listMyProducts() {
   return request<{ products: MeGoProduct[] }>("/api/store/products");
+}
+
+export function createProductVariation(productId: string, input: { title: string; price_cents: number }) {
+  return request<{ id: string }>(`/api/store/products/${productId}/variations`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function deleteProductVariation(id: string) {
+  return request<{ ok: true }>(`/api/store/variations/${id}`, { method: "DELETE" });
 }
 
 export function createProduct(input: {
@@ -322,8 +342,9 @@ export interface MeGoStore {
   lng: number | null;
 }
 
-export function listStores() {
-  return request<{ stores: MeGoStore[] }>("/api/stores", { auth: false });
+export function listStores(location?: { lat: number; lng: number }) {
+  const query = location ? `?lat=${location.lat}&lng=${location.lng}` : "";
+  return request<{ stores: MeGoStore[] }>(`/api/stores${query}`, { auth: false });
 }
 
 export function listStoreProducts(storeId: string) {
@@ -344,6 +365,7 @@ export interface MeGoOrderItem {
   quantity: number;
   price_cents: number;
   product_name: string;
+  variation_title: string | null;
 }
 
 export function placeOrder(input: {
@@ -353,7 +375,7 @@ export function placeOrder(input: {
   delivery_address: string;
   delivery_lat?: number;
   delivery_lng?: number;
-  items: { product_id: string; quantity: number }[];
+  items: { product_id: string; variation_id?: string; quantity: number }[];
   payment_method: "COD" | "FEDAPAY";
 }) {
   return request<{

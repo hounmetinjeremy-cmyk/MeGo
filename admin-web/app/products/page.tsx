@@ -21,9 +21,11 @@ import {
   clearApiToken,
   createCategory,
   createProduct,
+  createProductVariation,
   createSubcategory,
   deleteCategory,
   deleteProduct,
+  deleteProductVariation,
   deleteSubcategory,
   getApiToken,
   listMyCategories,
@@ -81,6 +83,10 @@ export default function ProductsPage() {
   const [savingCategory, setSavingCategory] = useState(false);
   const [newSubcategoryTitle, setNewSubcategoryTitle] = useState<Record<string, string>>({});
 
+  const [newVariationTitle, setNewVariationTitle] = useState("");
+  const [newVariationPrice, setNewVariationPrice] = useState(0);
+  const [savingVariation, setSavingVariation] = useState(false);
+
   const load = useCallback(async () => {
     try {
       setError(null);
@@ -131,6 +137,8 @@ export default function ProductsPage() {
   const openEditForm = (product: MeGoProduct) => {
     setEditing(product);
     setImageUrl(product.image_url);
+    setNewVariationTitle("");
+    setNewVariationPrice(0);
     setFormVisible(true);
   };
 
@@ -250,6 +258,38 @@ export default function ProductsPage() {
     }
   };
 
+  const onAddVariation = async () => {
+    if (!editing || !newVariationTitle.trim() || newVariationPrice <= 0) return;
+    setSavingVariation(true);
+    try {
+      await createProductVariation(editing.id, {
+        title: newVariationTitle.trim(),
+        price_cents: Math.round(newVariationPrice * 100),
+      });
+      setNewVariationTitle("");
+      setNewVariationPrice(0);
+      const { products: freshProducts } = await listMyProducts();
+      setProducts(freshProducts);
+      setEditing(freshProducts.find((p) => p.id === editing.id) ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'ajout de la variation");
+    } finally {
+      setSavingVariation(false);
+    }
+  };
+
+  const onDeleteVariation = async (id: string) => {
+    if (!editing) return;
+    try {
+      await deleteProductVariation(id);
+      const { products: freshProducts } = await listMyProducts();
+      setProducts(freshProducts);
+      setEditing(freshProducts.find((p) => p.id === editing.id) ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    }
+  };
+
   const onLogout = () => {
     clearApiToken();
     router.replace("/login");
@@ -293,6 +333,14 @@ export default function ProductsPage() {
             <Column header="Catégorie" body={(product: MeGoProduct) => categoryTitleFor(product.category_id)} />
             <Column field="description" header="Description" />
             <Column header="Prix" body={(product: MeGoProduct) => formatPrice(product.price_cents)} />
+            <Column
+              header="Variations"
+              body={(product: MeGoProduct) =>
+                product.variations.length > 0
+                  ? product.variations.map((v) => `${v.title} (${formatPrice(v.price_cents)})`).join(", ")
+                  : "—"
+              }
+            />
             <Column
               header="Disponible"
               body={(product: MeGoProduct) => (
@@ -506,6 +554,61 @@ export default function ProductsPage() {
               </div>
 
               <CustomUploadImageComponent existingImageUrl={imageUrl} onUploaded={setImageUrl} />
+
+              {editing ? (
+                <div>
+                  <label className="text-sm font-[500]">
+                    Variations (tailles/prix différents — optionnel)
+                  </label>
+                  <div className="mt-1 flex flex-col gap-2">
+                    {editing.variations.map((variation) => (
+                      <div
+                        key={variation.id}
+                        className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                      >
+                        <span>
+                          {variation.title} — {formatPrice(variation.price_cents)}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-red-600"
+                          onClick={() => onDeleteVariation(variation.id)}
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-end gap-2">
+                      <InputText
+                        className="flex-1 rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                        placeholder="Ex: Grande"
+                        value={newVariationTitle}
+                        onChange={(e) => setNewVariationTitle(e.target.value)}
+                      />
+                      <InputNumber
+                        inputClassName="w-24 rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                        placeholder="Prix (€)"
+                        value={newVariationPrice}
+                        onValueChange={(e) => setNewVariationPrice(e.value ?? 0)}
+                        mode="decimal"
+                        minFractionDigits={2}
+                        maxFractionDigits={2}
+                      />
+                      <CustomButton
+                        type="button"
+                        label={savingVariation ? "Ajout…" : "+ Ajouter"}
+                        className="h-10 rounded bg-[#18181B] px-4 text-white"
+                        loading={savingVariation}
+                        onClick={onAddVariation}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  Enregistre d&apos;abord le produit pour pouvoir ajouter des variations (tailles/prix).
+                </p>
+              )}
 
               <CustomButton
                 className="mt-2 h-10 w-full rounded bg-[#18181B] text-white"

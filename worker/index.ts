@@ -5,6 +5,7 @@ import {
   fedapayEventStatus,
   fedapayEventTransactionId,
 } from "./fedapay";
+import { pointInPolygon, findZoneForPoint } from "./zones";
 
 export interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
@@ -145,12 +146,24 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     if (auth instanceof Response) return auth;
     const store = await getStoreForOwner(env, auth.sub);
     if (!store) return error("No store found for this account", 404);
-    const { results } = await env.DB.prepare(
+    const { results: products } = await env.DB.prepare(
       "SELECT * FROM products WHERE store_id = ? ORDER BY created_at DESC",
     )
       .bind(store.id)
-      .all();
-    return json({ products: results });
+      .all<{ id: string }>();
+    const { results: variations } = await env.DB.prepare(
+      `SELECT pv.* FROM product_variations pv
+       JOIN products p ON p.id = pv.product_id
+       WHERE p.store_id = ? ORDER BY pv.created_at ASC`,
+    )
+      .bind(store.id)
+      .all<{ product_id: string }>();
+    return json({
+      products: products.map((product) => ({
+        ...product,
+        variations: variations.filter((v) => v.product_id === product.id),
+      })),
+    });
   }
 
   if (pathname === "/api/store/products" && method === "POST") {
@@ -201,6 +214,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     if (!product || product.store_id !== store.id) return error("Product not found", 404);
 
     if (method === "DELETE") {
+      await env.DB.prepare("DELETE FROM product_variations WHERE product_id = ?").bind(productId).run();
       await env.DB.prepare("DELETE FROM products WHERE id = ?").bind(productId).run();
       return json({ ok: true });
     }
@@ -211,6 +225,8 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       price_cents: number;
       image_url: string;
       is_available: boolean;
+      category_id: string;
+      subcategory_id: string;
     }>>();
     const fields: string[] = [];
     const values: unknown[] = [];
@@ -222,6 +238,71 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     if (fields.length === 0) return error("No fields to update");
     values.push(productId);
     await env.DB.prepare(`UPDATE products SET ${fields.join(", ")} WHERE id = ?`)
+      .bind(...values)
+      .run();
+    return json({ ok: true });
+  }
+
+  // ---- Store: product variations ----
+  const productVariationsMatch = pathname.match(/^\/api\/store\/products\/([^/]+)\/variations$/);
+  if (productVariationsMatch && method === "POST") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const productId = productVariationsMatch[1];
+
+    const product = await env.DB.prepare("SELECT store_id FROM products WHERE id = ?")
+      .bind(productId)
+      .first<{ store_id: string }>();
+    if (!product || product.store_id !== store.id) return error("Product not found", 404);
+
+    const body = await request.json<{ title: string; price_cents: number }>();
+    if (!body.title || typeof body.price_cents !== "number") {
+      return error("title and price_cents are required");
+    }
+    const variationId = newId();
+    await env.DB.prepare(
+      "INSERT INTO product_variations (id, product_id, title, price_cents) VALUES (?, ?, ?, ?)",
+    )
+      .bind(variationId, productId, body.title, body.price_cents)
+      .run();
+    return json({ id: variationId }, 201);
+  }
+
+  const variationMatch = pathname.match(/^\/api\/store\/variations\/([^/]+)$/);
+  if (variationMatch && (method === "PATCH" || method === "DELETE")) {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const variationId = variationMatch[1];
+
+    const owned = await env.DB.prepare(
+      `SELECT pv.id FROM product_variations pv
+       JOIN products p ON p.id = pv.product_id
+       WHERE pv.id = ? AND p.store_id = ?`,
+    )
+      .bind(variationId, store.id)
+      .first();
+    if (!owned) return error("Variation not found", 404);
+
+    if (method === "DELETE") {
+      await env.DB.prepare("DELETE FROM product_variations WHERE id = ?").bind(variationId).run();
+      return json({ ok: true });
+    }
+
+    const body = await request.json<Partial<{ title: string; price_cents: number; is_out_of_stock: boolean }>>();
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, value] of Object.entries(body)) {
+      if (value === undefined) continue;
+      fields.push(`${key} = ?`);
+      values.push(key === "is_out_of_stock" ? (value ? 1 : 0) : value);
+    }
+    if (fields.length === 0) return error("No fields to update");
+    values.push(variationId);
+    await env.DB.prepare(`UPDATE product_variations SET ${fields.join(", ")} WHERE id = ?`)
       .bind(...values)
       .run();
     return json({ ok: true });
@@ -403,18 +484,44 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
   if (pathname === "/api/stores" && method === "GET") {
     const { results } = await env.DB.prepare(
       "SELECT id, name, address, lat, lng FROM stores WHERE is_active = 1 ORDER BY name ASC",
-    ).all();
+    ).all<{ id: string; name: string; address: string | null; lat: number | null; lng: number | null }>();
+
+    const lat = Number(url.searchParams.get("lat"));
+    const lng = Number(url.searchParams.get("lng"));
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const zone = await findCustomerZone(env, [lat, lng]);
+      // No zones configured yet, or the customer isn't inside any zone:
+      // fall back to showing every store rather than an empty list.
+      if (zone) {
+        const filtered = results.filter(
+          (store) => store.lat != null && store.lng != null && pointInPolygon([store.lat, store.lng], zone.coordinates),
+        );
+        return json({ stores: filtered });
+      }
+    }
     return json({ stores: results });
   }
 
   const storeProductsMatch = pathname.match(/^\/api\/stores\/([^/]+)\/products$/);
   if (storeProductsMatch && method === "GET") {
-    const { results } = await env.DB.prepare(
+    const { results: products } = await env.DB.prepare(
       "SELECT id, store_id, category_id, subcategory_id, name, description, price_cents, image_url FROM products WHERE store_id = ? AND is_available = 1 ORDER BY created_at DESC",
     )
       .bind(storeProductsMatch[1])
-      .all();
-    return json({ products: results });
+      .all<{ id: string }>();
+    const { results: variations } = await env.DB.prepare(
+      `SELECT pv.id, pv.product_id, pv.title, pv.price_cents, pv.is_out_of_stock FROM product_variations pv
+       JOIN products p ON p.id = pv.product_id
+       WHERE p.store_id = ? AND pv.is_out_of_stock = 0`,
+    )
+      .bind(storeProductsMatch[1])
+      .all<{ product_id: string }>();
+    return json({
+      products: products.map((product) => ({
+        ...product,
+        variations: variations.filter((v) => v.product_id === product.id),
+      })),
+    });
   }
 
   const storeCategoriesMatch = pathname.match(/^\/api\/stores\/([^/]+)\/categories$/);
@@ -439,7 +546,7 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       delivery_address: string;
       delivery_lat?: number;
       delivery_lng?: number;
-      items: { product_id: string; quantity: number }[];
+      items: { product_id: string; variation_id?: string; quantity: number }[];
       payment_method?: "COD" | "FEDAPAY";
     }>();
     if (!body.store_id || !body.customer_name || !body.delivery_address || !body.items?.length) {
@@ -448,15 +555,39 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     const paymentMethod = body.payment_method === "FEDAPAY" ? "FEDAPAY" : "COD";
 
     let totalCents = 0;
-    const itemRows: { id: string; product_id: string; quantity: number; price_cents: number }[] = [];
+    const itemRows: {
+      id: string;
+      product_id: string;
+      variation_id: string | null;
+      quantity: number;
+      price_cents: number;
+    }[] = [];
     for (const item of body.items) {
       const product = await env.DB.prepare("SELECT price_cents FROM products WHERE id = ? AND store_id = ?")
         .bind(item.product_id, body.store_id)
         .first<{ price_cents: number }>();
       if (!product) return error(`Product ${item.product_id} not found in this store`);
-      const lineTotal = product.price_cents * item.quantity;
+
+      let priceCents = product.price_cents;
+      if (item.variation_id) {
+        const variation = await env.DB.prepare(
+          "SELECT price_cents FROM product_variations WHERE id = ? AND product_id = ?",
+        )
+          .bind(item.variation_id, item.product_id)
+          .first<{ price_cents: number }>();
+        if (!variation) return error(`Variation ${item.variation_id} not found for this product`);
+        priceCents = variation.price_cents;
+      }
+
+      const lineTotal = priceCents * item.quantity;
       totalCents += lineTotal;
-      itemRows.push({ id: newId(), product_id: item.product_id, quantity: item.quantity, price_cents: product.price_cents });
+      itemRows.push({
+        id: newId(),
+        product_id: item.product_id,
+        variation_id: item.variation_id ?? null,
+        quantity: item.quantity,
+        price_cents: priceCents,
+      });
     }
 
     const orderId = newId();
@@ -479,9 +610,9 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
 
     for (const row of itemRows) {
       await env.DB.prepare(
-        "INSERT INTO order_items (id, order_id, product_id, quantity, price_cents) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO order_items (id, order_id, product_id, variation_id, quantity, price_cents) VALUES (?, ?, ?, ?, ?, ?)",
       )
-        .bind(row.id, orderId, row.product_id, row.quantity, row.price_cents)
+        .bind(row.id, orderId, row.product_id, row.variation_id, row.quantity, row.price_cents)
         .run();
     }
 
@@ -529,7 +660,11 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       .first();
     if (!order) return error("Order not found", 404);
     const { results: items } = await env.DB.prepare(
-      "SELECT oi.id, oi.quantity, oi.price_cents, p.name AS product_name FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?",
+      `SELECT oi.id, oi.quantity, oi.price_cents, p.name AS product_name, pv.title AS variation_title
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       LEFT JOIN product_variations pv ON pv.id = oi.variation_id
+       WHERE oi.order_id = ?`,
     )
       .bind(orderDetailMatch[1])
       .all();
@@ -602,7 +737,25 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     if (auth instanceof Response) return auth;
     const { results } = await env.DB.prepare(
       "SELECT * FROM orders WHERE status = 'READY_FOR_PICKUP' AND rider_id IS NULL ORDER BY created_at ASC",
-    ).all();
+    ).all<{ delivery_lat: number | null; delivery_lng: number | null }>();
+
+    const riderLocation = await env.DB.prepare("SELECT lat, lng FROM rider_locations WHERE rider_id = ?")
+      .bind(auth.sub)
+      .first<{ lat: number; lng: number }>();
+    if (riderLocation) {
+      const zone = await findCustomerZone(env, [riderLocation.lat, riderLocation.lng]);
+      // No zones configured, or the rider isn't inside any zone: show every
+      // available order rather than hiding them all.
+      if (zone) {
+        const filtered = results.filter(
+          (order) =>
+            order.delivery_lat != null &&
+            order.delivery_lng != null &&
+            pointInPolygon([order.delivery_lat, order.delivery_lng], zone.coordinates),
+        );
+        return json({ orders: filtered });
+      }
+    }
     return json({ orders: results });
   }
 
@@ -742,4 +895,14 @@ async function getStoreForOwner(env: Env, ownerId: string) {
   return env.DB.prepare("SELECT id FROM stores WHERE owner_id = ?")
     .bind(ownerId)
     .first<{ id: string }>();
+}
+
+async function findCustomerZone(env: Env, point: [number, number]) {
+  const { results } = await env.DB.prepare("SELECT id, title, coordinates FROM zones").all<{
+    id: string;
+    title: string;
+    coordinates: string;
+  }>();
+  const zones = results.map((zone) => ({ ...zone, coordinates: JSON.parse(zone.coordinates) as [number, number][] }));
+  return findZoneForPoint(point, zones);
 }

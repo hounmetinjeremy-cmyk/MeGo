@@ -71,7 +71,11 @@ export default function ClientCheckoutScreen() {
         customer_name: user.name,
         customer_phone: phone.trim() || undefined,
         delivery_address: address.trim(),
-        items: cart.items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+        items: cart.items.map((i) => ({
+          product_id: i.product.id,
+          variation_id: i.variation?.id,
+          quantity: i.quantity,
+        })),
         payment_method: paymentMethod,
       });
       const orderId = result.id;
@@ -95,14 +99,18 @@ export default function ClientCheckoutScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Récapitulatif</Text>
-        {cart.items.map((i) => (
-          <View key={i.product.id} style={styles.summaryRow}>
-            <Text style={styles.summaryText}>
-              {i.quantity} × {i.product.name}
-            </Text>
-            <Text style={styles.summaryText}>{formatPrice(i.product.price_cents * i.quantity)}</Text>
-          </View>
-        ))}
+        {cart.items.map((i) => {
+          const priceCents = i.variation?.price_cents ?? i.product.price_cents;
+          return (
+            <View key={`${i.product.id}:${i.variation?.id ?? ""}`} style={styles.summaryRow}>
+              <Text style={styles.summaryText}>
+                {i.quantity} × {i.product.name}
+                {i.variation ? ` (${i.variation.title})` : ""}
+              </Text>
+              <Text style={styles.summaryText}>{formatPrice(priceCents * i.quantity)}</Text>
+            </View>
+          );
+        })}
         <View style={styles.summaryRow}>
           <Text style={styles.summaryTotalText}>Total</Text>
           <Text style={styles.summaryTotalText}>{formatPrice(cart.totalCents)}</Text>

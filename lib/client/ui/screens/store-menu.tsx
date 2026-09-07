@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { listStoreProducts, type MeGoProduct } from "@/lib/shared/api-client";
+import { listStoreProducts, type MeGoProduct, type MeGoProductVariation } from "@/lib/shared/api-client";
 import { useCart } from "@/lib/client/context/cart.context";
 import { clientStyles as styles } from "@/lib/client/ui/styles";
 import { enatega } from "@/lib/client/ui/theme";
@@ -39,10 +39,45 @@ export default function ClientStoreMenuScreen() {
     void load();
   }, [load]);
 
-  const quantityFor = (productId: string) =>
-    cart.storeId === storeId ? (cart.items.find((i) => i.product.id === productId)?.quantity ?? 0) : 0;
+  const quantityFor = (productId: string, variationId: string | null) =>
+    cart.storeId === storeId
+      ? (cart.items.find((i) => i.product.id === productId && (i.variation?.id ?? null) === variationId)?.quantity ??
+        0)
+      : 0;
 
   const cartCount = cart.storeId === storeId ? cart.items.reduce((n, i) => n + i.quantity, 0) : 0;
+
+  const renderStepperOrAdd = (
+    product: MeGoProduct,
+    variation: MeGoProductVariation | null,
+    priceCents: number,
+  ) => {
+    const qty = quantityFor(product.id, variation?.id ?? null);
+    return qty > 0 ? (
+      <View style={styles.stepper}>
+        <TouchableOpacity
+          style={styles.stepperButton}
+          onPress={() => cart.setQuantity(product.id, variation?.id ?? null, qty - 1)}
+        >
+          <Text style={styles.stepperButtonText}>−</Text>
+        </TouchableOpacity>
+        <Text style={styles.stepperValue}>{qty}</Text>
+        <TouchableOpacity
+          style={styles.stepperButton}
+          onPress={() => storeId && cart.addItem(storeId, storeName, product, variation)}
+        >
+          <Text style={styles.stepperButtonText}>+</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => storeId && cart.addItem(storeId, storeName, product, variation)}
+      >
+        <Text style={styles.addButtonText}>{formatPrice(priceCents)} · Ajouter</Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -69,38 +104,26 @@ export default function ClientStoreMenuScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={styles.emptyText}>Aucun produit disponible.</Text>}
         renderItem={({ item }) => {
-          const qty = quantityFor(item.id);
+          const hasVariations = item.variations.length > 0;
           return (
             <View style={styles.card}>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.name}</Text>
                 {item.description ? <Text style={styles.cardSubtitle}>{item.description}</Text> : null}
-                <Text style={styles.cardPrice}>{formatPrice(item.price_cents)}</Text>
+                {!hasVariations ? <Text style={styles.cardPrice}>{formatPrice(item.price_cents)}</Text> : null}
+
+                {hasVariations
+                  ? item.variations
+                      .filter((v) => !v.is_out_of_stock)
+                      .map((variation) => (
+                        <View key={variation.id} style={styles.summaryRow}>
+                          <Text style={styles.summaryText}>{variation.title}</Text>
+                          {renderStepperOrAdd(item, variation, variation.price_cents)}
+                        </View>
+                      ))
+                  : null}
               </View>
-              {qty > 0 ? (
-                <View style={styles.stepper}>
-                  <TouchableOpacity
-                    style={styles.stepperButton}
-                    onPress={() => cart.setQuantity(item.id, qty - 1)}
-                  >
-                    <Text style={styles.stepperButtonText}>−</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.stepperValue}>{qty}</Text>
-                  <TouchableOpacity
-                    style={styles.stepperButton}
-                    onPress={() => storeId && cart.addItem(storeId, storeName, item)}
-                  >
-                    <Text style={styles.stepperButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={() => storeId && cart.addItem(storeId, storeName, item)}
-                >
-                  <Text style={styles.addButtonText}>Ajouter</Text>
-                </TouchableOpacity>
-              )}
+              {!hasVariations ? renderStepperOrAdd(item, null, item.price_cents) : null}
             </View>
           );
         }}

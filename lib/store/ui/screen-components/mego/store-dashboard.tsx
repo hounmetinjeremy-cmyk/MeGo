@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 
 import {
   createProduct,
@@ -180,6 +181,10 @@ export default function StoreDashboard() {
         </View>
       ) : null}
 
+      <TouchableOpacity style={styles.browseButton} onPress={() => router.push("/client")}>
+        <Text style={styles.browseButtonText}>🛍️ Parcourir les boutiques</Text>
+      </TouchableOpacity>
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Mes produits</Text>
         <TouchableOpacity onPress={() => setShowAddProduct((v) => !v)}>
@@ -300,6 +305,15 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A" },
   errorBanner: { backgroundColor: "#7F1D1D", padding: 12, margin: 16, borderRadius: 8 },
   errorText: { color: "#FECACA" },
+  browseButton: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: "#334155",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  browseButtonText: { color: "#FFFFFF", fontWeight: "600" },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

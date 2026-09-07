@@ -116,6 +116,14 @@ export function deleteSubcategory(id: string) {
   return request<{ ok: true }>(`/api/store/subcategories/${id}`, { method: "DELETE" });
 }
 
+export interface MeGoProductVariation {
+  id: string;
+  product_id: string;
+  title: string;
+  price_cents: number;
+  is_out_of_stock: number;
+}
+
 export interface MeGoProduct {
   id: string;
   store_id: string;
@@ -127,6 +135,18 @@ export interface MeGoProduct {
   image_url: string | null;
   is_available: number;
   created_at: string;
+  variations: MeGoProductVariation[];
+}
+
+export function createProductVariation(productId: string, input: { title: string; price_cents: number }) {
+  return request<{ id: string }>(`/api/store/products/${productId}/variations`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function deleteProductVariation(id: string) {
+  return request<{ ok: true }>(`/api/store/variations/${id}`, { method: "DELETE" });
 }
 
 export function listMyProducts() {

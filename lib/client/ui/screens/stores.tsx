@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import * as Location from "expo-location";
 
 import { listStores, type MeGoStore } from "@/lib/shared/api-client";
 import { useCurrentUser } from "@/lib/client/hooks/useCurrentUser";
@@ -18,7 +19,26 @@ export default function ClientStoresScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const { stores } = await listStores();
+      // Best-effort: if the customer shares their location and it falls
+      // inside a delivery zone, only stores in that same zone are returned
+      // (see worker/index.ts GET /api/stores). No permission, no zones
+      // configured, or a location outside every zone all fall back to
+      // showing every store — never an empty screen because of this.
+      let location: { lat: number; lng: number } | undefined;
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        const granted =
+          status === Location.PermissionStatus.GRANTED ||
+          (await Location.requestForegroundPermissionsAsync()).status === Location.PermissionStatus.GRANTED;
+        if (granted) {
+          const position = await Location.getCurrentPositionAsync({});
+          location = { lat: position.coords.latitude, lng: position.coords.longitude };
+        }
+      } catch {
+        // Ignore: browsing without a known location is a normal fallback.
+      }
+
+      const { stores } = await listStores(location);
       setStores(stores);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");

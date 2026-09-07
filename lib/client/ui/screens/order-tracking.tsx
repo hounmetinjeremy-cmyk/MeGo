@@ -105,6 +105,7 @@ export default function ClientOrderTrackingScreen() {
           <View key={item.id} style={styles.summaryRow}>
             <Text style={styles.summaryText}>
               {item.quantity} × {item.product_name}
+              {item.variation_title ? ` (${item.variation_title})` : ""}
             </Text>
             <Text style={styles.summaryText}>{formatPrice(item.price_cents * item.quantity)}</Text>
           </View>

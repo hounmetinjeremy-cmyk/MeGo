@@ -37,6 +37,7 @@ Cloudflare Workers + D1 (SQLite) + R2 (fichiers), tout dans le même Worker qui 
 - **Auth** : `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — JWT (HS256)
 - **Produits** (vendeur) : `GET/POST /api/store/products`, `PATCH/DELETE /api/store/products/:id`
 - **Catégories** (vendeur) : `GET/POST /api/store/categories`, `PATCH/DELETE /api/store/categories/:id`, `POST /api/store/categories/:id/subcategories`, `DELETE /api/store/subcategories/:id`
+- **Variations** (vendeur) : `POST /api/store/products/:id/variations`, `PATCH/DELETE /api/store/variations/:id`
 - **Zones de livraison** (admin uniquement) : `GET/POST /api/admin/zones`, `PATCH/DELETE /api/admin/zones/:id` — `coordinates` est un polygone `[lat, lng][]`
 - **App client** (public, sans compte) : `GET /api/stores` (boutiques actives), `GET /api/stores/:id/products` (menu d'une boutique), `GET /api/orders/:id` (suivi d'une commande + ses articles)
 - **Commandes** : `POST /api/orders` (création, `payment_method: "COD" | "FEDAPAY"`), `GET /api/store/orders`, `PATCH /api/store/orders/:id/status`
@@ -89,15 +90,23 @@ Sert `http://localhost:3000/admin` en local (le `basePath` reste actif en dev) ;
 
 Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue.
 
-**Site vendeur (`admin-web/`)** : gère les produits (titre, description, prix, photo), les catégories/sous-catégories, les commandes, et (compte `admin`) les zones de livraison. Le vrai dashboard admin Enatega gère aussi les variations de plats, coupons, bannières, plusieurs membres du staff, taux de commission — aucun de ces concepts n'existe encore dans le schéma D1 de MeGo, donc ils ne sont pas repris (pas de fausse fonctionnalité qui ne ferait rien).
+**Site vendeur (`admin-web/`)** : gère les produits (titre, description, prix, photo, variations tailles/prix), les catégories/sous-catégories, les commandes, et (compte `admin`) les zones de livraison. Le vrai dashboard admin Enatega gère aussi les coupons, bannières, plusieurs membres du staff, taux de commission — aucun de ces concepts n'existe encore dans le schéma D1 de MeGo, donc ils ne sont pas repris (pas de fausse fonctionnalité qui ne ferait rien).
 
 ### Compte admin
 
 Un compte `admin` (accès à `/admin/zones`) a été créé directement en base — il n'y a pas d'inscription publique pour ce rôle (un compte admin est sensible, mieux vaut ne pas l'exposer à l'inscription libre). Les identifiants t'ont été donnés en message ; si tu les as perdus, redemande-moi de créer un nouveau compte admin ou de réinitialiser le mot de passe.
 
-### Zones de livraison (carte)
+### Zones de livraison (carte + filtrage)
 
-Dessinées sur une carte OpenStreetMap (Leaflet + Leaflet.draw), gratuite et sans clé API — contrairement à Enatega qui utilise Google Maps (payant au-delà d'un certain usage). Les zones sont enregistrées (`GET/POST /api/admin/zones`) mais **ne filtrent encore rien** : les boutiques et livreurs restent visibles partout pour l'app client/livreur. Le filtrage par zone (n'afficher que les boutiques dans la zone du client, n'assigner que les livreurs de la zone) est une étape séparée, pas encore faite.
+Dessinées sur une carte OpenStreetMap (Leaflet + Leaflet.draw), gratuite et sans clé API — contrairement à Enatega qui utilise Google Maps (payant au-delà d'un certain usage). Les zones sont enregistrées (`GET/POST /api/admin/zones`) et **filtrent** : `GET /api/stores?lat=&lng=` ne renvoie que les boutiques dans la même zone que le point donné (l'app client envoie sa position si elle y a accès), et `GET /api/rider/orders/available` ne renvoie que les commandes dans la même zone que la dernière position connue du livreur. Sans position connue, ou si aucune zone ne contient le point, tout reste visible (dégradation gracieuse, jamais un écran vide à cause des zones).
+
+### Variations de produit (tailles/prix)
+
+Un produit peut avoir 0 variation (le prix de base s'applique, comme avant) ou plusieurs (ex: "Petite" 500, "Grande" 900) — gérées dans le site vendeur (dans le formulaire produit, après l'avoir enregistré une première fois) et affichées dans l'app client comme des lignes séparées à ajouter au panier.
+
+### Parcourir en tant que vendeur/livreur
+
+Un bouton "🛍️ Parcourir les boutiques" en haut du tableau de bord vendeur et livreur amène directement sur l'app client (`/client`), pour voir/acheter chez d'autres boutiques sans changer de session. Limite connue : se connecter comme client depuis cet écran remplace le jeton de session vendeur/livreur (un seul jeton actif à la fois) — retourner ensuite sur son propre tableau de bord demandera de se reconnecter.
 
 ## À faire avant un build mobile (Android/iOS) de production
 

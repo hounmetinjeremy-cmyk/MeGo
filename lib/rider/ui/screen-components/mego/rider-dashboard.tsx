@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { router } from "expo-router";
 
 import {
   acceptOrder,
@@ -161,6 +162,10 @@ export default function RiderDashboard() {
         </View>
       ) : null}
 
+      <TouchableOpacity style={styles.browseButton} onPress={() => router.push("/client")}>
+        <Text style={styles.browseButtonText}>🛍️ Parcourir les boutiques</Text>
+      </TouchableOpacity>
+
       <Text style={styles.sectionTitle}>Mes courses en cours</Text>
       {mine.length === 0 ? (
         <Text style={styles.emptyText}>Aucune course en cours.</Text>
@@ -223,6 +228,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   trackingText: { color: "#BFDBFE", fontSize: 13, fontWeight: "600" },
+  browseButton: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: "#1E293B",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  browseButtonText: { color: "#FFFFFF", fontWeight: "600" },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",

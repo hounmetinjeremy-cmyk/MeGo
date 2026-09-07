@@ -52,6 +52,19 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Optional per-product size/price options (e.g. "Petite" 500, "Grande" 900).
+-- A product with zero rows here just uses products.price_cents directly —
+-- variations are additive, not a replacement, so existing simple products
+-- keep working unchanged.
+CREATE TABLE IF NOT EXISTS product_variations (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL REFERENCES products(id),
+  title TEXT NOT NULL,
+  price_cents INTEGER NOT NULL,
+  is_out_of_stock INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   store_id TEXT NOT NULL REFERENCES stores(id),
@@ -76,6 +89,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id TEXT PRIMARY KEY,
   order_id TEXT NOT NULL REFERENCES orders(id),
   product_id TEXT NOT NULL REFERENCES products(id),
+  variation_id TEXT REFERENCES product_variations(id),
   quantity INTEGER NOT NULL DEFAULT 1,
   price_cents INTEGER NOT NULL
 );
@@ -107,3 +121,4 @@ CREATE INDEX IF NOT EXISTS idx_orders_rider ON orders(rider_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_product_variations_product ON product_variations(product_id);
