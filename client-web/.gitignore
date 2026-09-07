@@ -10,7 +10,10 @@
 # testing
 /coverage
 
-.env
+# .env itself is intentionally NOT ignored: it holds only the public
+# (non-secret) Google OAuth Web client id, needed at build time — see
+# lib/context/configuration/configuration.context.tsx. Real secrets never
+# belong here; local overrides go in .env*.local instead (still ignored).
 
 # next.js
 /.next/
