@@ -97,12 +97,17 @@ Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas —
 
 Un compte `admin` (accès à `/admin/zones` et `/admin/accounts`) a été créé directement en base — il n'y a pas d'inscription publique pour ce rôle (un compte admin est sensible, mieux vaut ne pas l'exposer à l'inscription libre). Les identifiants t'ont été donnés en message ; si tu les as perdus, redemande-moi de créer un nouveau compte admin ou de réinitialiser le mot de passe.
 
-### Connexion vendeur/livreur : pas de bouton "s'inscrire", c'est normal
+### Inscription vendeur/livreur : deux façons de créer un compte
 
-Ni l'app mobile vendeur ni l'app mobile livreur n'ont de bouton d'inscription sur leur écran de connexion — c'est voulu, et ça reproduit le vrai fonctionnement d'Enatega : les comptes vendeur et livreur ne sont pas créés en libre-service, ils sont **créés par un administrateur** (dans Enatega, sections `super-admin/vendor` et `super-admin/riders`). MeGo reprend ce modèle avec la page **`/admin/accounts`** du site vendeur : un compte `admin` s'y connecte, choisit l'onglet "Vendeurs" ou "Livreurs", et crée le compte (nom, e-mail, mot de passe, téléphone optionnel, + nom de la boutique pour un vendeur). La personne se connecte ensuite directement avec cet e-mail/mot de passe sur l'app mobile correspondante (`/store` ou `/rider`) — aucune étape d'inscription de son côté.
+Il y a désormais deux façons de créer un compte vendeur ou livreur (les deux utilisent le même backend, `POST /api/auth/register`, donc les comptes créés par l'une ou l'autre sont identiques et interchangeables) :
 
-- Backend : `GET /api/admin/users?role=rider|store` (admin uniquement) liste les comptes existants par rôle ; la création réutilise `POST /api/auth/register`.
+1. **Auto-inscription** (écran de connexion des apps mobiles `/rider` et `/store`) : un lien "Pas encore de compte ? S'inscrire" sous le bouton de connexion ouvre un formulaire (nom, e-mail, mot de passe, téléphone optionnel, + nom de la boutique pour un vendeur). À la validation, le compte est créé, la personne est connectée automatiquement et atterrit directement sur son tableau de bord — aucune étape admin requise.
+2. **Création par un administrateur** — page **`/admin/accounts`** du site vendeur : un compte `admin` s'y connecte, choisit l'onglet "Vendeurs" ou "Livreurs", et crée le compte à la main (utile si l'admin veut lui-même distribuer les identifiants plutôt que de laisser la personne s'inscrire).
+
+- Backend : `POST /api/auth/register` (rôle `rider` ou `store`) ; `GET /api/admin/users?role=rider|store` (admin uniquement) liste les comptes existants par rôle.
+- Mobile : `lib/rider/ui/screens/register` et `lib/store/ui/screens/register` (routes `/rider/register`, `/store/register`).
 - Site vendeur : `/admin/accounts` (onglets Vendeurs/Livreurs, tableau + formulaire de création), lié depuis `/admin/zones` et vice-versa.
+- **Connexion avec Google** : pas encore implémentée (nécessite un client OAuth Google configuré côté Cloud Console + les identifiants natifs de l'app, actuellement en `REPLACE_ME` dans `app.json` — voir plus bas). À faire si tu veux ce mode de connexion en plus de l'e-mail/mot de passe.
 
 ### Zones de livraison (carte + filtrage)
 
