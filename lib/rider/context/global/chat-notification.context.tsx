@@ -288,7 +288,7 @@ export const ChatNotificationProvider = ({
         const order = assignedOrders?.find((item) => item._id === orderId);
         markChatRead(orderId);
         router.navigate({
-          pathname: "/chat",
+          pathname: "/rider/chat",
           params: {
             id: orderId,
             orderId: String(data.order ?? order?.orderId ?? ""),
@@ -311,7 +311,7 @@ export const ChatNotificationProvider = ({
         fetchPolicy: "network-only",
       });
       router.navigate({
-        pathname: "/order-detail",
+        pathname: "/rider/order-detail",
         params: { itemId: orderId },
       });
     },
@@ -385,9 +385,11 @@ export const ChatNotificationProvider = ({
       Notifications.addNotificationResponseReceivedListener((response) => {
         void handleNotificationResponse(response);
       });
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) void handleNotificationResponse(response);
-    });
+    if (Platform.OS !== "web") {
+      void Notifications.getLastNotificationResponseAsync().then((response) => {
+        if (response) void handleNotificationResponse(response);
+      });
+    }
 
     return () => responseSubscription.remove();
   }, [handleNotificationResponse, userId]);

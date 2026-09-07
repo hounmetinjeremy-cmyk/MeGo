@@ -1,30 +1,21 @@
-// React Native Async Storage
-
 import { Href, router } from "expo-router";
 
 // Contexts
 import { AuthContext } from "../context/global/auth.context";
 
-// GraphQL
-import { RIDER_LOGIN } from "../api/graphql/mutation/login";
-
 // Components
 import { FlashMessageComponent } from "../ui/useable-components";
-
-// Interfaces
-import { IRiderLoginResponse } from "../utils/interfaces/auth.interface";
 
 // Constants
 import { ROUTES } from "../utils/constants";
 import { setActiveRole } from "@/lib/shared/active-role";
+import { login as apiLogin, setApiToken, ApiError } from "@/lib/shared/api-client";
 
 // Hooks
-import { ApolloError, useMutation } from "@apollo/client";
 import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { setSecureItem } from "../services/secure-storage";
 import { useUserContext } from "../context/global/user.context";
-import { getNotificationToken } from "../utils/methods/permission";
 import { useRiderMode } from "../context/global/rider-mode.context";
 
 const useLogin = () => {
@@ -38,64 +29,28 @@ const useLogin = () => {
   const { setUserId } = useUserContext();
   const { riderIdKey } = useRiderMode();
 
-  // API
-  const [login] = useMutation(RIDER_LOGIN, {
-    onCompleted: onLoginCompleted,
-    onError,
-  });
-
-  //  useQuery(DEFAULT_RIDER_CREDS, { onCompleted: onDefaultCredsCompleted });
-
-  // Handlers
-  // For login mutation
-  async function onLoginCompleted({
-    riderLogin,
-  }: {
-    riderLogin: IRiderLoginResponse;
-  }) {
-    setIsLoading(false);
-    if (riderLogin) {
-      // Store the token (and clear the Apollo cache) before the rider-id, since
-      // writing rider-id un-skips the profile/orders queries. Doing it in this
-      // order avoids clearStore() cancelling those queries mid-flight, which
-      // left assignedOrders stuck at [] until the app was restarted.
-      await setTokenAsync(riderLogin.token);
-      setUserId(riderLogin.userId);
-      await setSecureItem(riderIdKey, riderLogin.userId);
-      await setActiveRole("rider");
-      router.replace(ROUTES.home as Href);
-    }
-  }
-  function onError(err: ApolloError) {
-    const error = err as ApolloError;
-    setIsLoading(false);
-    // Show a uniform credential error instead of the backend's message so the UI
-    // can't distinguish "user not found" from "wrong password" (enumeration).
-    const message = error?.graphQLErrors?.length
-      ? t("Invalid username or password")
-      : error?.networkError
-        ? t("Unable to connect. Please try again.")
-        : t("Something went wrong");
-    FlashMessageComponent({ message });
-  }
-
   const onLogin = async (username: string, password: string) => {
     try {
       setIsLoading(true);
-
-      const notificationToken = await getNotificationToken();
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      await login({
-        variables: {
-          username: username.toLowerCase(),
-          password,
-          notificationToken,
-          timeZone,
-        },
-      });
-    } catch {
-      FlashMessageComponent({ message: t("Something went wrong") });
+      const { token, user } = await apiLogin(username.toLowerCase(), password);
+      if (user.role !== "rider") {
+        FlashMessageComponent({ message: t("This account is not a rider account") });
+        return;
+      }
+      await setApiToken(token);
+      // Also satisfies the existing auth gate (checked by (tabs)/_layout.tsx),
+      // which only cares that a token is present.
+      await setTokenAsync(token);
+      setUserId(user.id);
+      await setSecureItem(riderIdKey, user.id);
+      await setActiveRole("rider");
+      router.replace(ROUTES.home as Href);
+    } catch (err) {
+      const message =
+        err instanceof ApiError && err.status === 401
+          ? t("Invalid username or password")
+          : t("Unable to connect. Please try again.");
+      FlashMessageComponent({ message });
     } finally {
       setIsLoading(false);
     }

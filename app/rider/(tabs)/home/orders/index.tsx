@@ -1,11 +1,5 @@
-// Components
-import HomeNewOrdersMain from "@/lib/rider/ui/screen-components/home/orders/main/new-orders";
-import { useTranslation } from "react-i18next";
+import RiderDashboard from "@/lib/rider/ui/screen-components/mego/rider-dashboard";
 
 export default function HomeScreen() {
-    // Hooks
-    const {t} = useTranslation();
-  return (
-    <HomeNewOrdersMain route={{ key: "new_orders", title: t("New Orders") }} />
-  );
+  return <RiderDashboard />;
 }
