@@ -16,7 +16,7 @@ const interfaceFont = Inter({
 });
 
 export const metadata = {
-  title: "Enatega Multivendor",
+  title: "MeGo",
   manifest: "/manifest.json",
 };
 

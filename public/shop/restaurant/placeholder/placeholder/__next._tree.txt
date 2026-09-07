@@ -5,6 +5,6 @@
 :HL["/shop/_next/static/css/ef46db3751d8e999.css","style"]
 :HL["/shop/_next/static/css/1caa0c71e5270a34.css","style"]
 :HL["/shop/_next/static/css/b5fe71a94d639536.css","style"]
-:HL["/shop/_next/static/css/ccc504167c6b853d.css","style"]
+:HL["/shop/_next/static/css/72d2b4f1ffeba85a.css","style"]
 :HL["/shop/_next/static/css/3e2629700c4d3b65.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"(localized)","param":null,"prefetchHints":0,"slots":{"children":{"name":"(restaurant-store)","param":null,"prefetchHints":0,"slots":{"children":{"name":"restaurant","param":null,"prefetchHints":0,"slots":{"children":{"name":"slug","param":{"type":"d","key":"placeholder","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"id","param":{"type":"d","key":"placeholder","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}}}}}}}},"staleTime":300,"buildId":"PVPxC1FwFftIUSlbfM-I7"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"(localized)","param":null,"prefetchHints":0,"slots":{"children":{"name":"(restaurant-store)","param":null,"prefetchHints":0,"slots":{"children":{"name":"restaurant","param":null,"prefetchHints":0,"slots":{"children":{"name":"slug","param":{"type":"d","key":"placeholder","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"id","param":{"type":"d","key":"placeholder","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}}}}}}}},"staleTime":300,"buildId":"YSh8Hka2IcuqfrKttUGlS"}

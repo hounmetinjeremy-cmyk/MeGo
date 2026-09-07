@@ -2,5 +2,5 @@
 2:I[23035,["2266","static/chunks/870fdd6f-48787e217b642fa2.js","1697","static/chunks/1697-c3cb0fee9bf6cd37.js","5122","static/chunks/5122-599e528d9f76de0d.js","7013","static/chunks/7013-19973dd4df2fc200.js","5772","static/chunks/5772-5d0ab5894877c1a3.js","3596","static/chunks/3596-e746d78295d64cd5.js","7186","static/chunks/7186-1bab2b8e37d0f77d.js","4754","static/chunks/4754-2e52d978ee61f9f8.js","9254","static/chunks/9254-c35aeb190334cd25.js","8080","static/chunks/8080-821624fe89c30ad8.js","8719","static/chunks/8719-80b8a1c622a17ce8.js","2217","static/chunks/app/(localized)/restaurantInfo/page-459dff269847ce9c.js"],"default"]
 3:I[90484,[],"OutletBoundary"]
 4:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"PVPxC1FwFftIUSlbfM-I7"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"YSh8Hka2IcuqfrKttUGlS"}
 5:null
