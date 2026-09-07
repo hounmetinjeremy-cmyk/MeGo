@@ -163,15 +163,26 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
       description?: string;
       price_cents: number;
       image_url?: string;
+      category_id?: string;
+      subcategory_id?: string;
     }>();
     if (!body.name || typeof body.price_cents !== "number") {
       return error("name and price_cents are required");
     }
     const productId = newId();
     await env.DB.prepare(
-      "INSERT INTO products (id, store_id, name, description, price_cents, image_url) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO products (id, store_id, name, description, price_cents, image_url, category_id, subcategory_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
-      .bind(productId, store.id, body.name, body.description ?? null, body.price_cents, body.image_url ?? null)
+      .bind(
+        productId,
+        store.id,
+        body.name,
+        body.description ?? null,
+        body.price_cents,
+        body.image_url ?? null,
+        body.category_id ?? null,
+        body.subcategory_id ?? null,
+      )
       .run();
     return json({ id: productId }, 201);
   }
@@ -216,6 +227,123 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
+  // ---- Store: categories & subcategories ----
+  if (pathname === "/api/store/categories" && method === "GET") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const { results: categories } = await env.DB.prepare(
+      "SELECT * FROM categories WHERE store_id = ? ORDER BY created_at ASC",
+    )
+      .bind(store.id)
+      .all<{ id: string }>();
+    const { results: subcategories } = await env.DB.prepare(
+      `SELECT sc.* FROM subcategories sc
+       JOIN categories c ON c.id = sc.category_id
+       WHERE c.store_id = ? ORDER BY sc.created_at ASC`,
+    )
+      .bind(store.id)
+      .all<{ category_id: string }>();
+    const withSubcategories = categories.map((category) => ({
+      ...category,
+      subcategories: subcategories.filter((sc) => sc.category_id === category.id),
+    }));
+    return json({ categories: withSubcategories });
+  }
+
+  if (pathname === "/api/store/categories" && method === "POST") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const body = await request.json<{ title: string; image_url?: string }>();
+    if (!body.title) return error("title is required");
+    const categoryId = newId();
+    await env.DB.prepare("INSERT INTO categories (id, store_id, title, image_url) VALUES (?, ?, ?, ?)")
+      .bind(categoryId, store.id, body.title, body.image_url ?? null)
+      .run();
+    return json({ id: categoryId }, 201);
+  }
+
+  const categoryMatch = pathname.match(/^\/api\/store\/categories\/([^/]+)$/);
+  if (categoryMatch && (method === "PATCH" || method === "DELETE")) {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const categoryId = categoryMatch[1];
+
+    const category = await env.DB.prepare("SELECT store_id FROM categories WHERE id = ?")
+      .bind(categoryId)
+      .first<{ store_id: string }>();
+    if (!category || category.store_id !== store.id) return error("Category not found", 404);
+
+    if (method === "DELETE") {
+      await env.DB.prepare("DELETE FROM subcategories WHERE category_id = ?").bind(categoryId).run();
+      await env.DB.prepare("DELETE FROM categories WHERE id = ?").bind(categoryId).run();
+      return json({ ok: true });
+    }
+
+    const body = await request.json<{ title?: string; image_url?: string }>();
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, value] of Object.entries(body)) {
+      if (value === undefined) continue;
+      fields.push(`${key} = ?`);
+      values.push(value);
+    }
+    if (fields.length === 0) return error("No fields to update");
+    values.push(categoryId);
+    await env.DB.prepare(`UPDATE categories SET ${fields.join(", ")} WHERE id = ?`)
+      .bind(...values)
+      .run();
+    return json({ ok: true });
+  }
+
+  const subcategoriesMatch = pathname.match(/^\/api\/store\/categories\/([^/]+)\/subcategories$/);
+  if (subcategoriesMatch && method === "POST") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const categoryId = subcategoriesMatch[1];
+
+    const category = await env.DB.prepare("SELECT store_id FROM categories WHERE id = ?")
+      .bind(categoryId)
+      .first<{ store_id: string }>();
+    if (!category || category.store_id !== store.id) return error("Category not found", 404);
+
+    const body = await request.json<{ title: string }>();
+    if (!body.title) return error("title is required");
+    const subcategoryId = newId();
+    await env.DB.prepare("INSERT INTO subcategories (id, category_id, title) VALUES (?, ?, ?)")
+      .bind(subcategoryId, categoryId, body.title)
+      .run();
+    return json({ id: subcategoryId }, 201);
+  }
+
+  const subcategoryMatch = pathname.match(/^\/api\/store\/subcategories\/([^/]+)$/);
+  if (subcategoryMatch && method === "DELETE") {
+    const auth = await requireRole(request, env, "store");
+    if (auth instanceof Response) return auth;
+    const store = await getStoreForOwner(env, auth.sub);
+    if (!store) return error("No store found for this account", 404);
+    const subcategoryId = subcategoryMatch[1];
+
+    const owned = await env.DB.prepare(
+      `SELECT sc.id FROM subcategories sc
+       JOIN categories c ON c.id = sc.category_id
+       WHERE sc.id = ? AND c.store_id = ?`,
+    )
+      .bind(subcategoryId, store.id)
+      .first();
+    if (!owned) return error("Subcategory not found", 404);
+
+    await env.DB.prepare("DELETE FROM subcategories WHERE id = ?").bind(subcategoryId).run();
+    return json({ ok: true });
+  }
+
   // ---- Public: browse (customer app) ----
   if (pathname === "/api/stores" && method === "GET") {
     const { results } = await env.DB.prepare(
@@ -227,11 +355,21 @@ async function router(request: Request, env: Env, url: URL): Promise<Response> {
   const storeProductsMatch = pathname.match(/^\/api\/stores\/([^/]+)\/products$/);
   if (storeProductsMatch && method === "GET") {
     const { results } = await env.DB.prepare(
-      "SELECT id, store_id, name, description, price_cents, image_url FROM products WHERE store_id = ? AND is_available = 1 ORDER BY created_at DESC",
+      "SELECT id, store_id, category_id, subcategory_id, name, description, price_cents, image_url FROM products WHERE store_id = ? AND is_available = 1 ORDER BY created_at DESC",
     )
       .bind(storeProductsMatch[1])
       .all();
     return json({ products: results });
+  }
+
+  const storeCategoriesMatch = pathname.match(/^\/api\/stores\/([^/]+)\/categories$/);
+  if (storeCategoriesMatch && method === "GET") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, title, image_url FROM categories WHERE store_id = ? ORDER BY created_at ASC",
+    )
+      .bind(storeCategoriesMatch[1])
+      .all();
+    return json({ categories: results });
   }
 
   // ---- Orders: create (customer app, requires a customer account) ----

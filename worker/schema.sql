@@ -24,9 +24,26 @@ CREATE TABLE IF NOT EXISTS stores (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  store_id TEXT NOT NULL REFERENCES stores(id),
+  title TEXT NOT NULL,
+  image_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS subcategories (
+  id TEXT PRIMARY KEY,
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  title TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
   store_id TEXT NOT NULL REFERENCES stores(id),
+  category_id TEXT REFERENCES categories(id),
+  subcategory_id TEXT REFERENCES subcategories(id),
   name TEXT NOT NULL,
   description TEXT,
   price_cents INTEGER NOT NULL,
@@ -70,7 +87,10 @@ CREATE TABLE IF NOT EXISTS rider_locations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_categories_store ON categories(store_id);
+CREATE INDEX IF NOT EXISTS idx_subcategories_category ON subcategories(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_store ON products(store_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(store_id);
 CREATE INDEX IF NOT EXISTS idx_orders_rider ON orders(rider_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);

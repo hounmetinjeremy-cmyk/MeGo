@@ -74,9 +74,53 @@ export function me() {
   return request<{ user: MeGoUser }>("/api/auth/me");
 }
 
+export interface MeGoSubcategory {
+  id: string;
+  category_id: string;
+  title: string;
+  created_at: string;
+}
+
+export interface MeGoCategory {
+  id: string;
+  store_id: string;
+  title: string;
+  image_url: string | null;
+  created_at: string;
+  subcategories: MeGoSubcategory[];
+}
+
+export function listMyCategories() {
+  return request<{ categories: MeGoCategory[] }>("/api/store/categories");
+}
+
+export function createCategory(input: { title: string; image_url?: string }) {
+  return request<{ id: string }>("/api/store/categories", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function deleteCategory(id: string) {
+  return request<{ ok: true }>(`/api/store/categories/${id}`, { method: "DELETE" });
+}
+
+export function createSubcategory(categoryId: string, title: string) {
+  return request<{ id: string }>(`/api/store/categories/${categoryId}/subcategories`, {
+    method: "POST",
+    body: { title },
+  });
+}
+
+export function deleteSubcategory(id: string) {
+  return request<{ ok: true }>(`/api/store/subcategories/${id}`, { method: "DELETE" });
+}
+
 export interface MeGoProduct {
   id: string;
   store_id: string;
+  category_id: string | null;
+  subcategory_id: string | null;
   name: string;
   description: string | null;
   price_cents: number;
@@ -94,6 +138,8 @@ export function createProduct(input: {
   description?: string;
   price_cents: number;
   image_url?: string;
+  category_id?: string;
+  subcategory_id?: string;
 }) {
   return request<{ id: string }>("/api/store/products", {
     method: "POST",
@@ -109,6 +155,8 @@ export function updateProduct(
     price_cents: number;
     image_url: string;
     is_available: boolean;
+    category_id: string;
+    subcategory_id: string;
   }>,
 ) {
   return request<{ ok: true }>(`/api/store/products/${id}`, {

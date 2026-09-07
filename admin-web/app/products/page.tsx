@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
@@ -11,6 +11,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
 import { InputSwitch } from "primereact/inputswitch";
+import { Dropdown } from "primereact/dropdown";
 import { TabView, TabPanel } from "primereact/tabview";
 
 import CustomButton from "@/components/button";
@@ -18,13 +19,19 @@ import ConfirmDialog from "@/components/confirm-dialog";
 import CustomUploadImageComponent from "@/components/upload-image";
 import {
   clearApiToken,
+  createCategory,
   createProduct,
+  createSubcategory,
+  deleteCategory,
   deleteProduct,
+  deleteSubcategory,
   getApiToken,
+  listMyCategories,
   listMyProducts,
   listStoreOrders,
   updateProduct,
   updateStoreOrderStatus,
+  type MeGoCategory,
   type MeGoOrder,
   type MeGoProduct,
 } from "@/lib/api-client";
@@ -59,6 +66,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<MeGoProduct[]>([]);
   const [orders, setOrders] = useState<MeGoOrder[]>([]);
+  const [categories, setCategories] = useState<MeGoCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,12 +76,22 @@ export default function ProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<MeGoProduct | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [categoryFormVisible, setCategoryFormVisible] = useState(false);
+  const [newCategoryTitle, setNewCategoryTitle] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [newSubcategoryTitle, setNewSubcategoryTitle] = useState<Record<string, string>>({});
+
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [productsRes, ordersRes] = await Promise.all([listMyProducts(), listStoreOrders()]);
+      const [productsRes, ordersRes, categoriesRes] = await Promise.all([
+        listMyProducts(),
+        listStoreOrders(),
+        listMyCategories(),
+      ]);
       setProducts(productsRes.products);
       setOrders(ordersRes.orders);
+      setCategories(categoriesRes.categories);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
@@ -89,6 +107,21 @@ export default function ProductsPage() {
     void load();
   }, [router, load]);
 
+  const categoryOptions = useMemo(
+    () => categories.map((category) => ({ label: category.title, value: category.id })),
+    [categories],
+  );
+
+  const subcategoryOptionsFor = useCallback(
+    (categoryId: string | null) => {
+      const category = categories.find((c) => c.id === categoryId);
+      return (category?.subcategories ?? []).map((sub) => ({ label: sub.title, value: sub.id }));
+    },
+    [categories],
+  );
+
+  const categoryTitleFor = (id: string | null) => categories.find((c) => c.id === id)?.title ?? "—";
+
   const openAddForm = () => {
     setEditing(null);
     setImageUrl(null);
@@ -101,24 +134,28 @@ export default function ProductsPage() {
     setFormVisible(true);
   };
 
-  const onSubmitProduct = async (values: { name: string; description: string; price: number }) => {
+  const onSubmitProduct = async (values: {
+    name: string;
+    description: string;
+    price: number;
+    category_id: string | null;
+    subcategory_id: string | null;
+  }) => {
     setSaving(true);
     try {
       const priceCents = Math.round(values.price * 100);
+      const payload = {
+        name: values.name.trim(),
+        description: values.description.trim() || undefined,
+        price_cents: priceCents,
+        image_url: imageUrl ?? undefined,
+        category_id: values.category_id ?? undefined,
+        subcategory_id: values.subcategory_id ?? undefined,
+      };
       if (editing) {
-        await updateProduct(editing.id, {
-          name: values.name.trim(),
-          description: values.description.trim(),
-          price_cents: priceCents,
-          image_url: imageUrl ?? undefined,
-        });
+        await updateProduct(editing.id, payload);
       } else {
-        await createProduct({
-          name: values.name.trim(),
-          description: values.description.trim() || undefined,
-          price_cents: priceCents,
-          image_url: imageUrl ?? undefined,
-        });
+        await createProduct(payload);
       }
       setFormVisible(false);
       await load();
@@ -169,6 +206,50 @@ export default function ProductsPage() {
     }
   };
 
+  const onAddCategory = async () => {
+    if (!newCategoryTitle.trim()) return;
+    setSavingCategory(true);
+    try {
+      await createCategory({ title: newCategoryTitle.trim() });
+      setNewCategoryTitle("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'ajout de la catégorie");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const onDeleteCategory = async (id: string) => {
+    try {
+      await deleteCategory(id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    }
+  };
+
+  const onAddSubcategory = async (categoryId: string) => {
+    const title = newSubcategoryTitle[categoryId]?.trim();
+    if (!title) return;
+    try {
+      await createSubcategory(categoryId, title);
+      setNewSubcategoryTitle((prev) => ({ ...prev, [categoryId]: "" }));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'ajout de la sous-catégorie");
+    }
+  };
+
+  const onDeleteSubcategory = async (id: string) => {
+    try {
+      await deleteSubcategory(id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    }
+  };
+
   const onLogout = () => {
     clearApiToken();
     router.replace("/login");
@@ -209,6 +290,7 @@ export default function ProductsPage() {
               }
             />
             <Column field="name" header="Nom" />
+            <Column header="Catégorie" body={(product: MeGoProduct) => categoryTitleFor(product.category_id)} />
             <Column field="description" header="Description" />
             <Column header="Prix" body={(product: MeGoProduct) => formatPrice(product.price_cents)} />
             <Column
@@ -231,6 +313,72 @@ export default function ProductsPage() {
               )}
             />
           </DataTable>
+        </TabPanel>
+
+        <TabPanel header="Catégories">
+          <div className="mb-4 flex items-end gap-2">
+            <div className="flex-1">
+              <label className="text-sm font-[500]">Nouvelle catégorie</label>
+              <InputText
+                className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                value={newCategoryTitle}
+                onChange={(e) => setNewCategoryTitle(e.target.value)}
+                placeholder="Ex: Pizzas, Boissons…"
+              />
+            </div>
+            <CustomButton
+              label={savingCategory ? "Ajout…" : "+ Ajouter"}
+              className="h-10 rounded bg-[#18181B] px-6 text-white"
+              onClick={onAddCategory}
+              loading={savingCategory}
+            />
+          </div>
+
+          {categories.length === 0 ? (
+            <p className="text-sm text-gray-500">Aucune catégorie pour le moment.</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {categories.map((category) => (
+                <div key={category.id} className="rounded-lg border border-gray-200 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-semibold">{category.title}</span>
+                    <button className="text-sm text-red-600" onClick={() => onDeleteCategory(category.id)}>
+                      Supprimer la catégorie
+                    </button>
+                  </div>
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {category.subcategories.map((sub) => (
+                      <span
+                        key={sub.id}
+                        className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs"
+                      >
+                        {sub.title}
+                        <button className="text-red-500" onClick={() => onDeleteSubcategory(sub.id)}>
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <InputText
+                      className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+                      placeholder="Sous-catégorie…"
+                      value={newSubcategoryTitle[category.id] ?? ""}
+                      onChange={(e) =>
+                        setNewSubcategoryTitle((prev) => ({ ...prev, [category.id]: e.target.value }))
+                      }
+                    />
+                    <button
+                      className="text-xs font-medium text-blue-600"
+                      onClick={() => onAddSubcategory(category.id)}
+                    >
+                      + Ajouter
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabPanel>
 
         <TabPanel header="Commandes">
@@ -276,6 +424,8 @@ export default function ProductsPage() {
             name: editing?.name ?? "",
             description: editing?.description ?? "",
             price: editing ? editing.price_cents / 100 : 0,
+            category_id: editing?.category_id ?? null,
+            subcategory_id: editing?.subcategory_id ?? null,
           }}
           enableReinitialize
           validationSchema={ProductSchema}
@@ -283,6 +433,44 @@ export default function ProductsPage() {
         >
           {({ values, errors, handleChange, setFieldValue }) => (
             <Form className="flex flex-col gap-3">
+              <div>
+                <label className="text-sm font-[500]">Catégorie</label>
+                <Dropdown
+                  className="mt-1 w-full rounded-lg border border-gray-300 text-sm"
+                  value={values.category_id}
+                  options={categoryOptions}
+                  placeholder="Sélectionner une catégorie"
+                  showClear
+                  onChange={(e) => {
+                    setFieldValue("category_id", e.value);
+                    setFieldValue("subcategory_id", null);
+                  }}
+                  panelFooterTemplate={() => (
+                    <div className="p-2">
+                      <button
+                        type="button"
+                        className="text-sm text-blue-600"
+                        onClick={() => setCategoryFormVisible(true)}
+                      >
+                        + Ajouter une catégorie
+                      </button>
+                    </div>
+                  )}
+                />
+              </div>
+              {values.category_id ? (
+                <div>
+                  <label className="text-sm font-[500]">Sous-catégorie</label>
+                  <Dropdown
+                    className="mt-1 w-full rounded-lg border border-gray-300 text-sm"
+                    value={values.subcategory_id}
+                    options={subcategoryOptionsFor(values.category_id)}
+                    placeholder="Sélectionner une sous-catégorie"
+                    showClear
+                    onChange={(e) => setFieldValue("subcategory_id", e.value)}
+                  />
+                </div>
+              ) : null}
               <div>
                 <label className="text-sm font-[500]">Nom du produit</label>
                 <InputText
@@ -328,6 +516,31 @@ export default function ProductsPage() {
             </Form>
           )}
         </Formik>
+      </Dialog>
+
+      <Dialog
+        header="Ajouter une catégorie"
+        visible={categoryFormVisible}
+        style={{ width: "24rem" }}
+        onHide={() => setCategoryFormVisible(false)}
+      >
+        <div className="flex flex-col gap-3">
+          <InputText
+            className="w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+            value={newCategoryTitle}
+            onChange={(e) => setNewCategoryTitle(e.target.value)}
+            placeholder="Ex: Pizzas, Boissons…"
+          />
+          <CustomButton
+            label={savingCategory ? "Ajout…" : "Ajouter"}
+            className="h-10 w-full rounded bg-[#18181B] text-white"
+            loading={savingCategory}
+            onClick={async () => {
+              await onAddCategory();
+              setCategoryFormVisible(false);
+            }}
+          />
+        </div>
       </Dialog>
 
       <ConfirmDialog
