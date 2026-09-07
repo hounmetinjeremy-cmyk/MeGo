@@ -1,6 +1,6 @@
 # MeGo
 
-Plateforme de livraison unifiée : livreur (GPS temps réel, acceptation de courses) et vendeur (catalogue, gestion des commandes) dans une seule application web + mobile (Expo), avec son propre backend sur Cloudflare (Workers + D1 + R2).
+Plateforme de livraison unifiée : client (commande), livreur (GPS temps réel, acceptation de courses) et vendeur (catalogue, gestion des commandes) dans une application web + mobile (Expo), plus un vrai site web vendeur (Next.js, `admin-web/`), avec son propre backend sur Cloudflare (Workers + D1 + R2).
 
 Déployé sur : `mego.<compte>.workers.dev` (Cloudflare Workers).
 
@@ -23,6 +23,9 @@ worker/
   crypto.ts         # JWT (HS256) + hash de mot de passe (PBKDF2), Web Crypto pur
   fedapay.ts        # Paiement FedaPay : création de transaction + vérification du webhook
   schema.sql        # schéma D1
+admin-web/          # Site web vendeur (Next.js, statique) — gestion des produits avec photo,
+                     # repris de l'interface réelle d'Enatega (admin/vendor), backend MeGo (REST)
+                     # exporté en HTML/JS statique dans public/admin/, servi par le même Worker
 ```
 
 Le code hérité d'Enatega (`lib/rider`, `lib/store`) reste namespacé séparément — les deux apps sources divergent trop en comportement pour être fusionnées en un seul code sans casser l'une des deux. Les écrans d'accueil (`lib/*/ui/screen-components/mego/`) sont neufs, écrits pour MeGo, et remplacent les écrans Enatega d'origine (encore présents mais non branchés).
@@ -48,9 +51,11 @@ Variables **Runtime** (Settings → Variables and Secrets, type Secret) :
 - `FEDAPAY_SECRET_KEY` — clé secrète FedaPay (tableau de bord FedaPay, API Keys)
 - `FEDAPAY_WEBHOOK_KEY` — clé de signature du webhook FedaPay (à configurer aussi côté FedaPay : URL du webhook = `https://<ton-worker>.workers.dev/api/fedapay/webhook`)
 
-Build & deploy (déjà configurés dans `wrangler.jsonc` / les settings du projet) :
-- Build command : `npx expo export -p web`
+Build & deploy (à configurer dans les settings du projet Cloudflare) :
+- Build command : `npm run build:web` (build `admin-web/` en HTML/JS statique dans `public/admin/`, puis exporte l'app Expo — remplace l'ancien `npx expo export -p web` si ce n'est pas déjà fait)
 - Deploy command : `npx wrangler deploy`
+
+Le site vendeur (`admin-web/`) est un projet Next.js à part (autre gestionnaire de paquets, autre framework) : il se construit avec `npm run build:admin-web` (ou automatiquement via `npm run build:web`), qui régénère `public/admin/`. Le HTML/JS généré est commité dans `public/admin/` pour que le build Cloudflare fonctionne même sans mettre à jour la commande de build tout de suite — mais pense à refaire `npm run build:admin-web` après chaque modification de `admin-web/`.
 
 ### Développement local du backend
 
@@ -68,11 +73,21 @@ npx wrangler dev --local
 
 Sert l'app ET l'API sur `http://localhost:8787` (ou le port choisi), en local, sans toucher à la base de production.
 
+### Développement local du site vendeur (admin-web)
+
+```bash
+cd admin-web
+npm install
+npm run dev
+```
+
+Sert `http://localhost:3000/admin` en local (le `basePath` reste actif en dev) ; les appels `/api/*` partent vers le même Worker que l'app mobile (relatif en prod, ou `NEXT_PUBLIC_MEGO_API_URL` en dev si le Worker tourne sur un autre port).
+
 ## Ce qui n'est PAS encore branché sur le backend MeGo
 
 Ces écrans existent toujours (hérités d'Enatega) mais ne fonctionnent pas — pas de backend derrière : gains/wallet, chat, gestion bancaire, changement de langue.
 
-**App client (commande)** : le backend est prêt (parcourir les boutiques/le menu, passer commande en COD ou FedaPay, suivre une commande), mais les écrans client (`app/client/...` : liste des boutiques → menu → panier → paiement → suivi) restent à construire, sur le modèle du parcours Enatega (Main → Restaurant → Cart → Checkout → OrderDetail).
+**Site vendeur (`admin-web/`)** : gère les produits (titre, description, prix, photo) et les commandes. Le vrai dashboard admin Enatega gère aussi les catégories, sous-catégories, variations, coupons, bannières, zones, etc. — aucun de ces concepts n'existe dans le schéma D1 de MeGo, donc ils ne sont pas repris (pas de fausse fonctionnalité qui ne ferait rien).
 
 ## À faire avant un build mobile (Android/iOS) de production
 

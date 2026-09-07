@@ -12,6 +12,8 @@
     "lint": "eslint . && prettier --check .",
     "check:single-vendor-schema": "node scripts/check-single-vendor-schema.js",
     "check:single-vendor-auth": "node scripts/check-single-vendor-store-auth.js",
+    "build:admin-web": "cd admin-web && npm install && npm run build && rm -rf ../public/admin && cp -r out ../public/admin",
+    "build:web": "npm run build:admin-web && expo export -p web",
     "postinstall": "patch-package"
   },
   "jest": {
